@@ -1,0 +1,38 @@
+{
+ "chart_name": "Plan vs Actual",
+ "chart_type": "Report",
+ "creation": "2025-06-23 00:17:51.379321",
+ "currency": "",
+ "docstatus": 0,
+ "doctype": "Dashboard Chart",
+ "dynamic_filters_json": "{}",
+ "filters_json": "{\"from_date\":\"2025-06-16\",\"to_date\":\"2025-06-23\"}",
+ "group_by_type": "Count",
+ "idx": 0,
+ "is_public": 1,
+ "is_standard": 1,
+ "modified": "2025-06-23 00:17:51.379321",
+ "modified_by": "Administrator",
+ "module": "Andon Management",
+ "name": "Plan vs Actual",
+ "number_of_groups": 0,
+ "owner": "Administrator",
+ "report_name": "Laporan Harian Produksi",
+ "roles": [],
+ "time_interval": "Yearly",
+ "timeseries": 0,
+ "timespan": "Last Year",
+ "type": "Line",
+ "use_report_chart": 0,
+ "x_field": "tanggal",
+ "y_axis": [
+  {
+   "color": "#29CD42",
+   "y_field": "total_plan"
+  },
+  {
+   "color": "#761ACB",
+   "y_field": "total_aktual"
+  }
+ ]
+}

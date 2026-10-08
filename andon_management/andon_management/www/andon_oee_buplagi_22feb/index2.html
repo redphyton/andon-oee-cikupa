@@ -1,0 +1,500 @@
+{% extends "templates/web.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block style %}
+<style>
+    /* OVERRIDE BAWAAN FRAPPE */
+    header, footer, nav, .navbar, .web-footer, .page-head, .page-header { display: none !important; }
+    .container, .page-content-wrapper, .main-section { max-width: 100% !important; width: 100vw !important; padding: 0 !important; margin: 0 !important; }
+    .page-container { padding-top: 0 !important; background-color: #ffffff !important; }
+
+    /* STYLE DASAR (LIGHT THEME) */
+    :root {
+        --bg-body: #ffffff; 
+        --bg-header: #f8f9fa; 
+        --bg-sticky-col: #ffffff;
+        --border-subtle: #dee2e6; 
+        --border-strong: #adb5bd; 
+        --text-color: #212529; 
+        --total-bg: #ffffff; 
+        
+        /* Shift Header: Ubah dari Hitam ke Abu Terang */
+        --shift-header-bg: #e9ecef; 
+        
+        /* WARNA INDIKATOR */
+        --color-normal: #212529; /* Text Hitam untuk angka normal */
+        --color-green: #00c853; /* Hijau */
+        --color-red: #d32f2f;   /* Merah */
+        --bg-weekend: #e9ecef;  /* Abu-abu terang untuk weekend */
+    }
+
+    body { background-color: var(--bg-body); color: var(--text-color); font-family: 'Segoe UI', Consolas, monospace; height: 100vh; width: 100vw; overflow: hidden; }
+
+    /* TOP BAR */
+    .custom-top-bar { padding: 0 15px; background: #ffffff; border-bottom: 2px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; height: 40px; flex-shrink: 0; width: 100%; }
+    .custom-top-bar h2 { font-size: 1.1rem; margin: 0; color: var(--text-color); line-height: 40px;}
+    .legend span { margin-left: 12px; font-weight: bold; font-size: 0.85em; }
+    .live-dot { height: 10px; width: 10px; background-color: #00c853; border-radius: 50%; display: inline-block; margin-right: 8px; box-shadow: 0 0 5px #00c853; }
+    .live-dot.loading { background-color: #ffeb3b; box-shadow: 0 0 5px #ffeb3b; }
+
+    /* BUTTON STYLES */
+    .btn-excel {
+        background-color: #107c41; color: white; border: none; padding: 4px 10px;
+        font-size: 0.8rem; cursor: pointer; border-radius: 3px; margin-left: 10px;
+        font-weight: bold;
+    }
+    .btn-excel:hover { background-color: #0c5e31; }
+
+    /* TABLE */
+    .andon-container { width: 100vw; height: calc(100vh - 40px); overflow: hidden; background-color: var(--bg-body); display: block; }
+    table { border-collapse: separate; border-spacing: 0; width: 100%; table-layout: fixed; font-size: 7px; font-weight: 700; }
+    tr { height: 28px; }
+    th, td { padding: 4px 0; vertical-align: middle; border-right: 1px solid var(--border-subtle); border-bottom: 1px solid var(--border-subtle); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: clip; }
+
+    /* STICKY */
+    thead tr:nth-child(1) th { border-right: 2px solid var(--border-strong); position: sticky; top: 0; z-index: 300; background: var(--bg-header); border-bottom: 1px solid var(--border-subtle); height: 28px; color: var(--text-color); }
+    thead tr:nth-child(2) th { position: sticky; top: 29px; z-index: 300; background: var(--bg-header); border-bottom: 2px solid var(--border-strong); height: 28px; color: var(--text-color); }
+    thead tr:nth-child(2) th.a-col, tbody td.a-col, tfoot td.a-col { border-right: 2px solid var(--border-strong); }
+    tbody td:first-child, thead tr th:first-child, tfoot td:first-child { position: sticky; left: 0; z-index: 301; background: var(--bg-sticky-col); border-right: 2px solid var(--border-strong); font-weight: bold; font-size: 8.5px; }
+    thead tr:nth-child(1) th:first-child { z-index: 400; background: var(--bg-header); }
+    thead tr:nth-child(2) th:first-child { z-index: 400; top: 29px; background: var(--bg-header); }
+
+    /* SHIFT HEADER & TOTAL ROW STYLE */
+    /* Ubah text color jadi var(--text-color) karena background sekarang terang */
+    .shift-header td { 
+        background-color: var(--shift-header-bg); 
+        color: var(--text-color); 
+        font-weight: bold; 
+        text-align: left; 
+        padding-left: 10px; 
+        border-top: 1px solid var(--border-subtle); 
+    }
+    
+    .total-row td, tfoot td {
+        background-color: var(--total-bg);
+        color: var(--text-color);
+        font-weight: bold;
+        border-top: 2px solid #000; /* Border Hitam Tegas */
+        border-bottom: 2px solid #000;
+    }
+    .total-row td:first-child, tfoot td:first-child {
+        position: sticky; left: 0; z-index: 302;
+        background-color: var(--total-bg);
+        text-align: right; padding-right: 10px;
+    }
+    tfoot td { position: sticky; bottom: 0; z-index: 350; }
+    tfoot td:first-child { z-index: 360; }
+
+    /* WARNA CELL UTAMA */
+    .p-col { color: var(--color-normal) !important; } 
+    .a-col { color: var(--color-normal); font-weight: bold; } 
+    .a-col.achieved { color:#107c41; } 
+    .a-col.missed { color: var(--color-red); }
+    .weekend { background-color: var(--bg-weekend) !important; }
+
+    /* Zebra Striping untuk baris ganjil/genap agar mudah dibaca */
+    tbody tr:nth-child(even) td { background-color: rgba(0,0,0,0.02); }
+    tbody tr:nth-child(even) td:first-child { background-color: #f8f9fa; }
+
+</style>
+{% endblock %}
+
+{% block page_content %}
+    <div class="custom-top-bar">
+        <h2>
+            <span class="live-dot" id="status-indicator"></span>
+            <!-- Update Warna Assy: Hitam Bold -->
+            ANDON OEE : <span style="color:#000000; font-weight:bold;">{{ active_assy }}</span> 
+            <span style="font-size:0.8em; color:#666; margin-left:10px;">({{ period_label }})</span>
+        </h2>
+        <div style="display:flex; align-items:center;">
+            <div class="legend">
+                <span style="color:var(--color-normal)">NORMAL</span>
+                <span style="color:var(--color-green)">ACHIEVED</span>
+                <span style="color:var(--color-red)">MISSED</span>
+            </div>
+            <button class="btn-excel" onclick="downloadExcel()">Save Excel</button>
+        </div>
+    </div>
+
+    <div class="andon-container">
+        <table id="andonTable">
+            <colgroup>
+                <col style="width: 4.5%;"> 
+                {% for d in dates %}
+                    <col style="width: 1.54%;">
+                    <col style="width: 1.54%;">
+                {% endfor %}
+            </colgroup>
+            <thead>
+                <tr>
+                    <th rowspan="2">JAM</th>
+                    {% for d in dates %}
+                        <!-- FIX DATE PARSE -->
+                        {% set is_weekend = frappe.utils.getdate(d.key|replace('_', '-')).weekday() in [5, 6] %}
+                        <th colspan="2" class="{% if is_weekend %}weekend{% endif %}" data-weekend="{{ is_weekend }}">
+                            {{ d.day_num }}
+                        </th>
+                    {% endfor %}
+                </tr>
+                <tr>
+                    {% for d in dates %}
+                        {% set is_weekend = frappe.utils.getdate(d.key|replace('_', '-')).weekday() in [5, 6] %}
+                        <th class="p-col {% if is_weekend %}weekend{% endif %}">P</th>
+                        <th class="a-col {% if is_weekend %}weekend{% endif %}">A</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% set ns = namespace(last_shift=None) %}
+                
+                {% for row in rows %}
+                    {% if ns.last_shift and row.shift != ns.last_shift %}
+                        <tr class="total-row">
+                            <td>TOTAL {{ ns.last_shift }}</td>
+                            {% for d in dates %}
+                                {% set s_plan = shift_totals[ns.last_shift][d.key].plan|int %}
+                                {% set s_act  = shift_totals[ns.last_shift][d.key].actual|int %}
+                                {% set is_weekend = frappe.utils.getdate(d.key|replace('_', '-')).weekday() in [5, 6] %}
+                                
+                                <td class="p-col {% if is_weekend %}weekend{% endif %}" id="total_{{ ns.last_shift|replace(' ', '_') }}_{{ d.key }}_p">{{ "{:,.0f}".format(s_plan) }}</td>
+                                
+                                {% set css_class = '' %}
+                                {% if s_plan == 0 and s_act == 0 %}{% set css_class = '' %}
+                                {% elif s_act >= s_plan %}{% set css_class = 'achieved' %}
+                                {% else %}{% set css_class = 'missed' %}
+                                {% endif %}
+
+                                <td id="total_{{ ns.last_shift|replace(' ', '_') }}_{{ d.key }}_a" 
+                                    class="a-col {{ css_class }} {% if is_weekend %}weekend{% endif %}">
+                                   {{ "{:,.0f}".format(s_act) }}
+                                </td>
+                            {% endfor %}
+                        </tr>
+                    {% endif %}
+
+                    {% if row.shift != ns.last_shift %}
+                        <tr class="shift-header">
+                            <td style="position:sticky; left:0; z-index:302; background:var(--shift-header-bg);">SHIFT {{ row.shift }}</td>
+                            <td colspan="{{ dates|length * 2 }}"></td>
+                        </tr>
+                        {% set ns.last_shift = row.shift %}
+                    {% endif %}
+
+                    <tr>
+                        <td>{{ row.deskripsi }}</td>
+                        {% for d in dates %}
+                            {% set val_p = row['plan_' ~ d.key] %}
+                            {% set val_a = row['actual_' ~ d.key] %}
+                            {% set is_weekend = frappe.utils.getdate(d.key|replace('_', '-')).weekday() in [5, 6] %}
+                            
+                            {% set css_class = '' %}
+                            {% if val_p != "" and val_a != "" %}
+                                {% set p_int = val_p|int %}
+                                {% set a_int = val_a|int %}
+                                {% if p_int == 0 and a_int == 0 %}{% set css_class = '' %}
+                                {% elif a_int >= p_int %}{% set css_class = 'achieved' %}
+                                {% else %}{% set css_class = 'missed' %}
+                                {% endif %}
+                            {% endif %}
+
+                            <td id="p_{{ row.urutan }}_{{ d.key }}" class="p-col {% if is_weekend %}weekend{% endif %}">{{ val_p }}</td>
+                            <td id="a_{{ row.urutan }}_{{ d.key }}" class="a-col {{ css_class }} {% if is_weekend %}weekend{% endif %}">{{ val_a }}</td>
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+
+                {% if ns.last_shift %}
+                    <tr class="total-row">
+                        <td>TOTAL {{ ns.last_shift }}</td>
+                        {% for d in dates %}
+                            {% set s_plan = shift_totals[ns.last_shift][d.key].plan|int %}
+                            {% set s_act  = shift_totals[ns.last_shift][d.key].actual|int %}
+                            {% set is_weekend = frappe.utils.getdate(d.key|replace('_', '-')).weekday() in [5, 6] %}
+                            
+                            {% set css_class = '' %}
+                            {% if s_plan == 0 and s_act == 0 %}{% set css_class = '' %}
+                            {% elif s_act >= s_plan %}{% set css_class = 'achieved' %}
+                            {% else %}{% set css_class = 'missed' %}
+                            {% endif %}
+
+                            <td class="p-col {% if is_weekend %}weekend{% endif %}" id="total_{{ ns.last_shift|replace(' ', '_') }}_{{ d.key }}_p">{{ "{:,.0f}".format(s_plan) }}</td>
+                            <td id="total_{{ ns.last_shift|replace(' ', '_') }}_{{ d.key }}_a" class="a-col {{ css_class }} {% if is_weekend %}weekend{% endif %}">{{ "{:,.0f}".format(s_act) }}</td>
+                        {% endfor %}
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}
+
+{% block script %}
+<script src="/assets/andon_management/js/xlsx.bundle.min.js"></script>
+
+<script>
+    function formatNumber(num) {
+    if (!num && num !== 0) return "";
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
+function unformatNumber(str) {
+    return str.toString().replace(/,/g, '');
+}
+
+    frappe.ready(function() {
+        const statusDot = $('#status-indicator');
+        const dateKeys = {{ dates | map(attribute='key') | list | tojson }};
+        const shiftTotalsInit = {{ shift_totals | tojson }};
+        
+        const weekendIndices = [];
+        dateKeys.forEach((key, index) => {
+            let parts = key.split('_');
+            let d = new Date(parts[0], parts[1] - 1, parts[2]);
+            if (d.getDay() === 0 || d.getDay() === 6) { 
+                weekendIndices.push(index);
+            }
+        });
+
+        // --- PENTING: GUNAKAN VARIABEL SERVER (JINJA) SEBAGAI SINGLE SOURCE OF TRUTH ---
+        const currentAssy = "{{ active_assy }}";
+        const periodLabel = "{{ period_label }}"; // Tambahan: Tangkap periode
+
+        console.log("Monitoring Assy:", currentAssy);
+
+        frappe.realtime.on('refresh_andon_monitor', function(data) {
+            
+            // Cek apakah data yang diupdate milik Assy yang sedang dibuka
+            if(data.assy_name && data.assy_name !== currentAssy) {
+                console.log("Ignored update for " + data.assy_name + ". Current: " + currentAssy);
+                return; // JANGAN UPDATE JIKA BEDA ASSY
+            }
+
+            statusDot.addClass('loading');
+            frappe.call({
+                method: "andon_management.www.oee.index.get_updates", 
+                args: { 
+                    assy: currentAssy 
+                },
+                callback: function(r) {
+                    if(r.message && r.message.rows) {
+                        updateTable(r.message.rows, r.message.shift_totals);
+                        statusDot.removeClass('loading');
+                        statusDot.css('transform', 'scale(1.5)');
+                        setTimeout(() => statusDot.css('transform', 'scale(1)'), 200);
+                    }
+                }
+            });
+        });
+
+        function updateCellColor(cell, plan, actual) {
+            cell.removeClass('missed achieved'); 
+            if (plan === "" || actual === "") return;
+            let p_val = parseInt(plan) || 0;
+            let a_val = parseInt(actual) || 0;
+            if (p_val === 0 && a_val === 0) return; 
+            if (a_val >= p_val) cell.addClass('achieved'); 
+            else cell.addClass('missed'); 
+        }
+
+        function updateTable(rows, shift_totals) {
+            rows.forEach(row => {
+                let urutan = row.urutan;
+                dateKeys.forEach(key => {
+                    let val_p = row['plan_' + key];
+                    let val_a = row['actual_' + key];
+                    let p_cell = $('#p_' + urutan + '_' + key);
+                    if(p_cell.text() != val_p) p_cell.text(val_p);
+                    let a_cell = $('#a_' + urutan + '_' + key);
+                    if(a_cell.text() != val_a) a_cell.text(val_a);
+                    updateCellColor(a_cell, val_p, val_a);
+                });
+            });
+            // if(shift_totals) {
+            //     for (let shiftName in shift_totals) {
+            //         let safeShiftName = shiftName.replace(/ /g, '_');
+            //         dateKeys.forEach(key => {
+            //             let totals = shift_totals[shiftName][key];
+            //             let t_p = $('#total_' + safeShiftName + '_' + key + '_p');
+            //             if(t_p.length && t_p.text() != totals.plan) t_p.text(totals.plan);
+            //             let t_a = $('#total_' + safeShiftName + '_' + key + '_a');
+            //             if(t_a.length && t_a.text() != totals.actual) t_a.text(totals.actual);
+            //             if(t_a.length) updateCellColor(t_a, totals.plan, totals.actual);
+            //         });
+            //     }
+            // }
+            // Di dalam function updateTable(rows, shift_totals) ...
+if(shift_totals) {
+    for (let shiftName in shift_totals) {
+        let safeShiftName = shiftName.replace(/ /g, '_');
+        dateKeys.forEach(key => {
+            let totals = shift_totals[shiftName][key];
+            let t_p = $('#total_' + safeShiftName + '_' + key + '_p');
+            
+            // Gunakan formatNumber di sini
+            let formatted_p = formatNumber(totals.plan);
+            if(t_p.length && t_p.text() != formatted_p) t_p.text(formatted_p);
+            
+            let t_a = $('#total_' + safeShiftName + '_' + key + '_a');
+            let formatted_a = formatNumber(totals.actual);
+            if(t_a.length && t_a.text() != formatted_a) t_a.text(formatted_a);
+            
+            if(t_a.length) updateCellColor(t_a, totals.plan, totals.actual);
+        });
+    }
+}
+        }
+
+        // --- FUNGSI EXCEL LOKAL ---
+        window.downloadExcel = function() {
+            var table = document.getElementById("andonTable");
+            
+            if(typeof XLSX === 'undefined') {
+                frappe.msgprint("Library Excel belum terload. Pastikan file xlsx.bundle.min.js ada di folder assets.");
+                return;
+            }
+
+            // 1. CLONE TABLE & TAMBAH JUDUL
+            var clone = table.cloneNode(true);
+            var thead = clone.querySelector('thead');
+            
+            // Hitung colspan agar judul rapi di tengah/kiri
+            var totalCols = 1 + (dateKeys.length * 2);
+
+            var trTitle = document.createElement('tr');
+            var thTitle = document.createElement('th');
+            // MODIFIKASI JUDUL: Tambahkan Assy dan Periode
+            thTitle.innerText = "Laporan Andon OEE : " + currentAssy + " (" + periodLabel + ")";
+            thTitle.colSpan = totalCols;
+            thTitle.style.textAlign = 'left';
+            thTitle.style.fontSize = '14pt';
+            thTitle.style.fontWeight = 'bold';
+            thTitle.style.height = '30px';
+            thTitle.style.backgroundColor = '#ffffff'; 
+            thTitle.style.color = '#000000';
+            
+            trTitle.appendChild(thTitle);
+            
+            // Masukkan di paling atas
+            if(thead) {
+                thead.insertBefore(trTitle, thead.firstChild);
+            }
+
+            // 2. GENERATE SHEET
+            var wb = XLSX.utils.book_new();
+            var ws = XLSX.utils.table_to_sheet(clone); // Generate dari CLONE
+
+            // 3. SET LEBAR KOLOM
+            var wscols = [{wch: 25}]; 
+            for(var i=0; i < dateKeys.length * 2; i++) { wscols.push({wch: 8}); }
+            ws['!cols'] = wscols;
+
+            // 4. STYLING ITERATION
+            var range = XLSX.utils.decode_range(ws['!ref']);
+            
+            for(var R = range.s.r; R <= range.e.r; ++R) {
+                for(var C = range.s.c; C <= range.e.c; ++C) {
+                    var cell_address = XLSX.utils.encode_cell({r: R, c: C});
+                    
+                    // --- FIX: Create Stub Cell untuk Merged Cells agar Border tidak bolong ---
+                    // Menggunakan tipe 's' (string) dan value kosong agar style border tetap terbaca
+                    if(!ws[cell_address]) {
+                        ws[cell_address] = { t: 's', v: '' };
+                    }
+
+                    // BASE STYLE
+                    var style = {
+                        font: { name: "Arial", sz: 10, color: { rgb: "000000" } },
+                        fill: { fgColor: { rgb: "FFFFFF" } },
+                        border: {
+                            top: { style: "thin", color: { rgb: "000000" } },
+                            bottom: { style: "thin", color: { rgb: "000000" } },
+                            left: { style: "thin", color: { rgb: "000000" } },
+                            right: { style: "thin", color: { rgb: "000000" } }
+                        },
+                        alignment: { vertical: "center", horizontal: "center" }
+                    };
+
+                    var val = ws[cell_address].v;
+
+                    // Row 0: JUDUL UTAMA (Laporan Andon OEE)
+                    if (R === 0) {
+                        style.font.bold = true;
+                        style.font.sz = 14;
+                        style.alignment.horizontal = "left";
+                        style.fill.fgColor = { rgb: "FFFFFF" };
+                        
+                        // FIX: Beri border bawah pada Judul agar garis atas tanggal tidak putus
+                        style.border = {
+                            top: { style: "none" },
+                            left: { style: "none" },
+                            right: { style: "none" },
+                            bottom: { style: "thin", color: { rgb: "000000" } } 
+                        };
+                        ws[cell_address].s = style;
+                        continue;
+                    }
+
+                    // Row 1 & 2: HEADER TABEL (Header asli geser ke bawah)
+                    if (R === 1 || R === 2) {
+                        style.fill.fgColor = { rgb: "EEEEEE" };
+                        style.font.bold = true;
+                    }
+
+                    // Deskripsi (always C=0)
+                    if(C === 0) {
+                        style.alignment.horizontal = "left";
+                    }
+
+                    // Weekend (Only for data columns C > 0 and NOT Title Row 0)
+                    if(C > 0 && R > 0) {
+                        var dateIdx = Math.floor((C - 1) / 2);
+                        if(weekendIndices.includes(dateIdx)) {
+                            // Untuk Header Tabel (R 1 & 2) biarkan EEEEEE atau set khusus
+                            // Untuk Data (R >= 3), set E0E0E0
+                            style.fill.fgColor = { rgb: "E0E0E0" }; 
+                        }
+                    }
+
+                    // Total
+                    var firstCellVal = ws[XLSX.utils.encode_cell({r: R, c: 0})]?.v || "";
+                    if(String(firstCellVal).startsWith("TOTAL")) {
+                        style.fill.fgColor = { rgb: "F2F2F2" }; 
+                        style.font.bold = true;
+                        style.border.top.style = "double"; 
+                    }
+
+                    // Shift
+                    if(String(firstCellVal).startsWith("SHIFT") && C === 0) {
+                        style.fill.fgColor = { rgb: "D9D9D9" };
+                        style.font.bold = true;
+                    }
+
+                    // Conditional Color (Hanya baris data, R >= 3)
+                    if (R >= 3 && C > 0 && C % 2 === 0) {
+                        var cellPlan = ws[XLSX.utils.encode_cell({r: R, c: C-1})];
+                        var valP = cellPlan ? parseInt(cellPlan.v) : 0;
+                        var valA = parseInt(val) || 0;
+
+                        if (valP !== 0 || valA !== 0) { 
+                            if(valA >= valP) {
+                                style.font.color = { rgb: "008000" }; 
+                                style.font.bold = true;
+                            } else {
+                                style.font.color = { rgb: "FF0000" }; 
+                                style.font.bold = true;
+                            }
+                        }
+                    }
+                    ws[cell_address].s = style;
+                }
+            }
+
+            XLSX.utils.book_append_sheet(wb, ws, "Andon Data");
+            var d = new Date();
+            var dateStr = d.toISOString().slice(0,10);
+            XLSX.writeFile(wb, "Andon_OEE_" + currentAssy + "_" + dateStr + ".xlsx");
+        }
+    });
+</script>
+{% endblock %}

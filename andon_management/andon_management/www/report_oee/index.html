@@ -1,0 +1,357 @@
+{% extends "templates/web.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block style %}
+<style>
+    /* RESET LAYOUT */
+    header, footer, nav, .navbar, .web-footer, .page-head, .page-header { display: none !important; }
+    .container, .page-content-wrapper, .main-section { max-width: 100% !important; width: 100vw !important; padding: 0 !important; margin: 0 !important; }
+    .page-container { padding-top: 0 !important; background-color: #ffffff !important; }
+
+    /* BASIC STYLE */
+    :root {
+        --bg-body: #ffffff; --bg-header: #f8f9fa; --border-subtle: #dee2e6; --border-strong: #868e96; 
+        --text-color: #212529; --color-green: #00c853; --color-red: #d32f2f; --bg-weekend: #f4f4f4; 
+    }
+    body { background-color: var(--bg-body); color: var(--text-color); font-family: 'Segoe UI', sans-serif; height: 100vh; width: 100vw; overflow: hidden; }
+
+    /* TOP BAR */
+    .custom-top-bar { padding: 0 15px; background: #ffffff; border-bottom: 2px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; height: 40px; flex-shrink: 0; width: 100%; }
+    .custom-top-bar h2 { font-size: 1.1rem; margin: 0; color: var(--text-color); line-height: 40px;}
+    .live-dot { height: 10px; width: 10px; background-color: #00c853; border-radius: 50%; display: inline-block; margin-right: 8px; box-shadow: 0 0 5px #00c853; transition: all 0.3s; }
+    .live-dot.loading { background-color: #ffeb3b; box-shadow: 0 0 5px #ffeb3b; }
+
+    .btn-excel { background-color: #107c41; color: white; border: none; padding: 4px 10px; font-size: 0.8rem; cursor: pointer; border-radius: 3px; font-weight: bold; }
+
+    /* TABLE */
+    .andon-container { width: 100vw; height: calc(65vh - 40px); overflow: auto; background-color: var(--bg-body); }
+    table { border-collapse: separate; border-spacing: 0; width: 100%; table-layout: fixed; font-size: 7.5px; font-weight: 700; }
+    tr { height: 28px; }
+    th, td { padding: 4px 0; vertical-align: middle; border-right: 1px solid var(--border-subtle); border-bottom: 1px solid var(--border-subtle); text-align: center; white-space: nowrap; }
+
+    /* STICKY HEADER & COLS */
+    thead tr:nth-child(1) th:first-child { position: sticky !important; top: 0; left: 0; z-index: 500 !important; background: #fff !important; border-right: 2px solid var(--border-strong) !important; box-shadow: 2px 0 5px rgba(0,0,0,0.1); }
+    tbody td:first-child, .shift-header td:first-child, .total-row td:first-child { position: sticky !important; left: 0; z-index: 301 !important; background: #fff !important; border-right: 2px solid var(--border-strong) !important; font-weight: bold; box-shadow: 2px 0 5px rgba(0,0,0,0.05); }
+    thead tr:nth-child(1) th { position: sticky; top: 0; z-index: 400; background: var(--bg-header); }
+    thead tr:nth-child(2) th { position: sticky; top: 28px; z-index: 400; background: var(--bg-header); border-bottom: 2px solid var(--border-strong); }
+
+    .day-sep { border-right: 2px solid var(--border-strong) !important; }
+    .weekend { background-color: var(--bg-weekend) !important; }
+    .achieved { color: #107c41 !important; } .missed { color: var(--color-red) !important; }
+    .total-row td { background-color: #ffffff; border-top: 2px solid #000; border-bottom: 2px solid #000; font-weight: bold; }
+
+    /* CHART WRAPPER (VERTIKAL) */
+    .charts-wrapper { 
+        width: 100vw; 
+        height: 35vh; 
+        background: #fff; 
+        border-top: 2px solid var(--border-strong); 
+        box-sizing: border-box; 
+        display: flex; 
+        flex-direction: column; 
+        overflow-y: auto;       
+        overflow-x: hidden;     
+    }
+    
+    .chart-box { 
+        width: 100%; 
+        min-height: 100%; 
+        padding: 5px 10px; 
+        border-bottom: 4px solid var(--border-subtle); 
+        position: relative; 
+        box-sizing: border-box;
+    }
+    
+    .chart-title { 
+        position: absolute; 
+        top: 5px; 
+        left: 10px; 
+        font-size: 0.8rem; 
+        font-weight: bold; 
+        z-index: 10; 
+        background: rgba(255,255,255,0.8); 
+        padding: 2px 5px; 
+        border-radius: 3px; 
+        border: 1px solid #ddd; 
+    }
+</style>
+{% endblock %}
+
+{% block page_content %}
+    <div class="custom-top-bar">
+        <h2><span class="live-dot" id="status-indicator"></span> ANDON OEE : <span style="color:#000; font-weight:bold;">{{ active_assy }}</span> <small>({{ period_label }})</small></h2>
+        <button class="btn-excel" onclick="downloadExcel()">Save Excel</button>
+    </div>
+
+    <div class="andon-container">
+        <table id="andonTable">
+            <colgroup><col style="width: 100px;"> {% for d in dates %}<col style="width: 35px;"><col style="width: 35px;">{% endfor %}</colgroup>
+            <thead>
+                <tr>
+                    <th rowspan="2">JAM</th>
+                    {% for d in dates %}
+                        {% set is_wk = frappe.utils.getdate(d.key|replace('_', '-')).weekday() in [5, 6] %}
+                        <th colspan="2" class="day-sep {% if is_wk %}weekend{% endif %}">{{ d.day_num }}</th>
+                    {% endfor %}
+                </tr>
+                <tr>
+                    {% for d in dates %}
+                        {% set is_wk = frappe.utils.getdate(d.key|replace('_', '-')).weekday() in [5, 6] %}
+                        <th class="{% if is_wk %}weekend{% endif %}">P</th><th class="day-sep {% if is_wk %}weekend{% endif %}">A</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% set ns = namespace(last_shift=None) %}
+                {% for row in rows %}
+                    {% if ns.last_shift and row.shift != ns.last_shift %}
+                        <tr class="total-row">
+                            <td>TOTAL {{ ns.last_shift }}</td>
+                            {% for d in dates %}
+                                {% set is_wk = frappe.utils.getdate(d.key|replace('_', '-')).weekday() in [5, 6] %}
+                                <td class="{% if is_wk %}weekend{% endif %}" id="total_{{ ns.last_shift|replace(' ', '_') }}_{{ d.key }}_p">{{ "{:,.0f}".format(shift_totals[ns.last_shift][d.key].plan) }}</td>
+                                <td class="day-sep {% if is_wk %}weekend{% endif %}" id="total_{{ ns.last_shift|replace(' ', '_') }}_{{ d.key }}_a">{{ "{:,.0f}".format(shift_totals[ns.last_shift][d.key].actual) }}</td>
+                            {% endfor %}
+                        </tr>
+                    {% endif %}
+                    {% if row.shift != ns.last_shift %}
+                        <tr class="shift-header"><td>SHIFT {{ row.shift }}</td><td colspan="{{ dates|length * 2 }}" class="day-sep"></td></tr>
+                        {% set ns.last_shift = row.shift %}
+                    {% endif %}
+                    <tr>
+                        <td>{{ row.deskripsi }}</td>
+                        {% for d in dates %}
+                            {% set is_wk = frappe.utils.getdate(d.key|replace('_', '-')).weekday() in [5, 6] %}
+                            <td class="{% if is_wk %}weekend{% endif %}" id="p_{{ row.urutan }}_{{ d.key }}">{{ row['plan_' ~ d.key] }}</td>
+                            <td class="day-sep {% if is_wk %}weekend{% endif %}" id="a_{{ row.urutan }}_{{ d.key }}">{{ row['actual_' ~ d.key] }}</td>
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+                {% if ns.last_shift %}
+                    <tr class="total-row">
+                        <td>TOTAL {{ ns.last_shift }}</td>
+                        {% for d in dates %}
+                            {% set is_wk = frappe.utils.getdate(d.key|replace('_', '-')).weekday() in [5, 6] %}
+                            <td class="{% if is_wk %}weekend{% endif %}" id="total_{{ ns.last_shift|replace(' ', '_') }}_{{ d.key }}_p">{{ "{:,.0f}".format(shift_totals[ns.last_shift][d.key].plan) }}</td>
+                            <td class="day-sep {% if is_wk %}weekend{% endif %}" id="total_{{ ns.last_shift|replace(' ', '_') }}_{{ d.key }}_a">{{ "{:,.0f}".format(shift_totals[ns.last_shift][d.key].actual) }}</td>
+                        {% endfor %}
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="charts-wrapper">
+        {% for shift, data in charts_by_shift.items() %}
+            <div class="chart-box" id="box_{{ shift|replace(' ', '_') }}">
+                <div class="chart-title">GRAFIK SHIFT {{ shift }}</div>
+                <canvas id="chart_{{ shift|replace(' ', '_') }}"></canvas>
+            </div>
+        {% endfor %}
+    </div>
+{% endblock %}
+
+{% block script %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="/assets/andon_management/js/xlsx.bundle.min.js"></script>
+<script src="/assets/andon_management/js/exceljs.min.js"></script>
+<script src="/assets/andon_management/js/FileSaver.min.js"></script>
+
+<script>
+    function formatNumber(num) {
+        if (num === null || num === undefined || num === "") return "";
+        return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    }
+
+    let chartInstances = {};
+
+    // --- Helper Function: Cek apakah data kosong semua ---
+    function isDataEmpty(data) {
+        // Ambil data kumulatif terakhir yang bukan null
+        const validPlan = data.cum_plan.filter(v => v !== null);
+        const validAct = data.cum_actual.filter(v => v !== null);
+        
+        const maxPlan = validPlan.length > 0 ? Math.max(...validPlan) : 0;
+        const maxAct = validAct.length > 0 ? Math.max(...validAct) : 0;
+        
+        // Return true jika Plan 0 DAN Actual 0
+        return (maxPlan === 0 && maxAct === 0);
+    }
+
+    // --- Helper Function: Toggle Visibilitas Grafik ---
+    function toggleChartVisibility(shiftName, data) {
+        const boxId = '#box_' + shiftName.replace(/ /g, '_');
+        if (isDataEmpty(data)) {
+            $(boxId).hide(); // Sembunyikan jika kosong
+        } else {
+            $(boxId).show(); // Tampilkan jika ada data
+        }
+    }
+
+    frappe.ready(function() {
+        const dateKeys = {{ dates | map(attribute='key') | list | tojson }};
+        const currentAssy = "{{ active_assy }}";
+        const statusDot = $('#status-indicator');
+        const chartLabels = {{ chart_labels | tojson }};
+        const initialChartsData = {{ charts_by_shift | tojson }};
+
+        for (const [shiftName, data] of Object.entries(initialChartsData)) {
+            // 1. Cek Visibilitas Awal
+            toggleChartVisibility(shiftName, data);
+
+            const ctx = document.getElementById('chart_' + shiftName.replace(/ /g, '_'));
+            if (ctx) {
+                chartInstances[shiftName] = new Chart(ctx.getContext('2d'), {
+                    data: {
+                        labels: chartLabels,
+                        datasets: [
+                            { type: 'line', label: 'Plan (Cum)', data: data.cum_plan, borderColor: '#d32f2f', backgroundColor: '#d32f2f', borderWidth: 2, yAxisID: 'yAccum', pointRadius: 1 },
+                            { type: 'line', label: 'Actual (Cum)', data: data.cum_actual, borderColor: '#107c41', backgroundColor: '#107c41', borderWidth: 2, yAxisID: 'yAccum', pointRadius: 1 },
+                            { type: 'bar', label: 'Qty Harian', data: data.daily_actual, backgroundColor: 'rgba(66, 133, 244, 0.6)', yAxisID: 'yDaily' }
+                        ]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { boxWidth: 10, font: { size: 10 } } }, title: { display: false } }, scales: { yDaily: { type: 'linear', position: 'left', ticks: { font: { size: 9 } } }, yAccum: { type: 'linear', position: 'right', grid: { drawOnChartArea: false }, ticks: { font: { size: 9 } } }, x: { ticks: { font: { size: 9 } } } } }
+                });
+            }
+        }
+        updateAllColors();
+
+        setInterval(() => {
+            const now = new Date();
+            const todayStr = now.getFullYear() + "_" + String(now.getMonth() + 1).padStart(2, '0') + "_" + String(now.getDate()).padStart(2, '0');
+            if (!dateKeys.includes(todayStr)) location.reload(); 
+        }, 900000);
+
+        frappe.realtime.on('refresh_andon_monitor', function(data) {
+            if(data.assy_name && data.assy_name !== currentAssy) return;
+            statusDot.addClass('loading');
+            frappe.call({
+                method: "andon_management.www.report_oee.index.get_updates", 
+                args: { assy: currentAssy },
+                callback: function(r) {
+                    if(r.message) {
+                        updateContent(r.message.rows, r.message.shift_totals, r.message.charts_by_shift);
+                        statusDot.removeClass('loading');
+                    }
+                }
+            });
+        });
+
+        function updateCellColor(cell, p, a) {
+            cell.removeClass('missed achieved');
+            p = parseInt(p.toString().replace(/,/g, '')) || 0; 
+            a = parseInt(a.toString().replace(/,/g, '')) || 0;
+            if (p === 0 && a === 0) return;
+            cell.addClass(a >= p ? 'achieved' : 'missed');
+        }
+
+        function updateAllColors() {
+            $('tbody tr:not(.total-row):not(.shift-header)').each(function() {
+                const rowUrutan = $(this).find('td[id^="p_"]').attr('id')?.split('_')[1];
+                if(!rowUrutan) return;
+                dateKeys.forEach(k => {
+                    const p = $('#p_' + rowUrutan + '_' + k).text();
+                    const aCell = $('#a_' + rowUrutan + '_' + k);
+                    updateCellColor(aCell, p, aCell.text());
+                });
+            });
+            $('.total-row').each(function() {
+                const shiftId = $(this).find('td[id^="total_"]').attr('id')?.split('_')[1];
+                if(!shiftId) return;
+                dateKeys.forEach(k => {
+                    const p = $('#total_' + shiftId + '_' + k + '_p').text();
+                    const aCell = $('#total_' + shiftId + '_' + k + '_a');
+                    updateCellColor(aCell, p, aCell.text());
+                });
+            });
+        }
+
+        function updateContent(rows, shift_totals, newChartsData) {
+            dateKeys.forEach(k => {
+                rows.forEach(row => {
+                    let pVal = row['plan_' + k];
+                    let aVal = row['actual_' + k];
+                    if (pVal === null || pVal === undefined) pVal = "";
+                    if (aVal === null || aVal === undefined) aVal = "";
+                    $('#p_' + row.urutan + '_' + k).text(pVal);
+                    $('#a_' + row.urutan + '_' + k).text(aVal);
+                });
+            });
+
+            for (let s in shift_totals) {
+                const safeS = s.replace(/ /g, '_');
+                dateKeys.forEach(k => {
+                    $('#total_' + safeS + '_' + k + '_p').text(formatNumber(shift_totals[s][k].plan));
+                    $('#total_' + safeS + '_' + k + '_a').text(formatNumber(shift_totals[s][k].actual));
+                });
+            }
+
+            if (newChartsData) {
+                for (const [shiftName, data] of Object.entries(newChartsData)) {
+                    // 2. Cek Visibilitas saat Update Realtime
+                    toggleChartVisibility(shiftName, data);
+
+                    const chart = chartInstances[shiftName];
+                    if (chart) {
+                        chart.data.datasets[0].data = data.cum_plan;
+                        chart.data.datasets[1].data = data.cum_actual;
+                        chart.data.datasets[2].data = data.daily_actual;
+                        chart.update('none');
+                    }
+                }
+            }
+            updateAllColors();
+        }
+    });
+
+    // --- EXCELJS Function (Tetap sama) ---
+    window.downloadExcel = async function() {
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Andon OEE');
+        const table = document.getElementById("andonTable");
+        const thinBorder = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+        const colors = { headerBg: 'FFF8F9FA', weekendBg: 'FFF4F4F4', achieved: 'FF00C853', missed: 'FFD32F2F' };
+        
+        let colConfig = [{width: 25}];
+        for(let i=0; i<{{ dates|length }}*2; i++) colConfig.push({width: 5});
+        worksheet.columns = colConfig;
+
+        let occupied = [];
+        for (let i = 0; i < table.rows.length; i++) {
+            const htmlRow = table.rows[i];
+            let excelCol = 1;
+            if (!occupied[i]) occupied[i] = [];
+            
+            for (let j = 0; j < htmlRow.cells.length; j++) {
+                const htmlCell = htmlRow.cells[j];
+                while (occupied[i][excelCol]) excelCol++;
+                
+                const rowSpan = htmlCell.rowSpan || 1;
+                const colSpan = htmlCell.colSpan || 1;
+                const sheetCell = worksheet.getRow(i + 1).getCell(excelCol);
+                const rawVal = htmlCell.innerText.replace(/,/g, '').trim();
+                sheetCell.value = (!isNaN(rawVal) && rawVal !== "") ? parseFloat(rawVal) : htmlCell.innerText;
+
+                if (rowSpan > 1 || colSpan > 1) {
+                    worksheet.mergeCells(i + 1, excelCol, i + rowSpan, excelCol + colSpan - 1);
+                    for (let r = 0; r < rowSpan; r++) {
+                        if (!occupied[i + r]) occupied[i + r] = [];
+                        for (let c = 0; c < colSpan; c++) occupied[i + r][excelCol + c] = true;
+                    }
+                }
+                
+                sheetCell.alignment = { vertical: 'middle', horizontal: 'center' };
+                sheetCell.border = thinBorder;
+                if(i < 2) { sheetCell.fill = { type: 'pattern', pattern:'solid', fgColor: { argb: colors.headerBg } }; sheetCell.font = { bold: true }; }
+                if(htmlCell.classList.contains('achieved')) sheetCell.font = { color: { argb: colors.achieved }, bold: true };
+                if(htmlCell.classList.contains('missed')) sheetCell.font = { color: { argb: colors.missed }, bold: true };
+                excelCol += colSpan;
+            }
+        }
+        worksheet.getColumn(1).width = 25;
+        const buffer = await workbook.xlsx.writeBuffer();
+        saveAs(new Blob([buffer]), `Andon_OEE_${new Date().toISOString().slice(0,10)}.xlsx`);
+    };
+</script>
+{% endblock %}

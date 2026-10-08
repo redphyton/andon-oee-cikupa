@@ -1,0 +1,96 @@
+{
+ "actions": [],
+ "allow_import": 1,
+ "allow_rename": 1,
+ "autoname": "field:slot_no",
+ "creation": "2025-09-18 20:06:24.593453",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "slot_no",
+  "description",
+  "shift",
+  "start_time",
+  "end_time",
+  "durasi",
+  "plan_start_time"
+ ],
+ "fields": [
+  {
+   "fieldname": "slot_no",
+   "fieldtype": "Int",
+   "label": "Slot No",
+   "unique": 1
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Data",
+   "label": "Description"
+  },
+  {
+   "fieldname": "shift",
+   "fieldtype": "Select",
+   "label": "Shift",
+   "options": "1\n2\n3"
+  },
+  {
+   "fieldname": "start_time",
+   "fieldtype": "Time",
+   "label": "Start Time"
+  },
+  {
+   "fieldname": "end_time",
+   "fieldtype": "Time",
+   "label": "End Time"
+  },
+  {
+   "fieldname": "durasi",
+   "fieldtype": "Int",
+   "label": "Durasi"
+  },
+  {
+   "fieldname": "plan_start_time",
+   "fieldtype": "Time",
+   "label": "Plan Start Time"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-09-21 20:58:52.540350",
+ "modified_by": "Administrator",
+ "module": "Andon Management",
+ "name": "Production Time Slot",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Andon Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

@@ -1,0 +1,89 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:part_no",
+ "creation": "2025-09-18 21:00:19.641569",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "part_no",
+  "part_name",
+  "takt_time",
+  "barcode"
+ ],
+ "fields": [
+  {
+   "fieldname": "part_no",
+   "fieldtype": "Data",
+   "label": "Part No",
+   "unique": 1
+  },
+  {
+   "fieldname": "part_name",
+   "fieldtype": "Data",
+   "label": "Part Name"
+  },
+  {
+   "fieldname": "takt_time",
+   "fieldtype": "Float",
+   "label": "Takt Time",
+   "precision": "1"
+  },
+  {
+   "fieldname": "barcode",
+   "fieldtype": "Data",
+   "label": "Barcode"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-10-21 23:09:53.245491",
+ "modified_by": "Administrator",
+ "module": "Andon Management",
+ "name": "Master Part",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Andon Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "All",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

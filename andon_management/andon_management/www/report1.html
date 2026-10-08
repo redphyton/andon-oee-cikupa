@@ -1,0 +1,403 @@
+{% extends "templates/web.html" %}
+{% block header %}{% endblock %}
+{% block navbar %}{% endblock %}
+{% block footer %}{% endblock %}
+{% block sidebar %}{% endblock %}
+{# ================================================================== #}
+{# 1. BLOK KONTEN HALAMAN (HANYA STRUKTUR HTML) #}
+{# ================================================================== #}
+{% block page_content %}
+<div class="production-report-page">
+    <div class="report-header">
+        <h2 class="font-weight-bold page-title">Laporan Produksi Bulanan</h2>
+        <a href="/app" class="back-to-desk-link">
+            <i class="fa fa-arrow-left"></i> Kembali ke Desk
+        </a>
+    </div>
+
+    <div class="report-filters card shadow-sm">
+        <div class="card-body">
+            <div class="filter-controls">
+                <div class="filter-item">
+                    <label for="year-filter">Tahun</label>
+                    <input type="number" id="year-filter" class="form-control">
+                </div>
+                <div class="filter-item">
+                    <label for="month-filter">Bulan</label>
+                    <input type="number" id="month-filter" class="form-control">
+                </div>
+            <div class="filter-item">
+                    <label for="mesin-filter">Mesin</label>
+                    <select id="mesin-filter" class="form-control">
+                        <option value="">-- Semua Mesin --</option>
+                    </select>
+                </div>
+                <div class="filter-item">
+                    <button id="run-report-btn" class="btn btn-primary btn-block">Tampilkan Laporan</button>
+                </div>
+                <div class="filter-item">
+                    <button id="export-excel-btn" class="btn btn-success btn-block" style="display: none;">
+                        <i class="fa fa-file-excel-o"></i> Simpan ke Excel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="report-container" class="report-body card shadow-sm">
+        <p class="text-muted p-4">Silakan pilih filter dan klik "Tampilkan Laporan".</p>
+    </div>
+</div>
+{% endblock %}
+
+
+{# ================================================================== #}
+{# 2. BLOK CSS (SEMUA STYLE MASUK KE SINI) #}
+{# ================================================================== #}
+{% block style %}
+<style>
+/* Body dan Container Utama */
+
+.container {
+    max-width: 100% !important;
+}
+
+
+.production-report-page {
+    padding: 20px;
+    background-color: #f1f5f9;
+}
+.report-header h2 {
+    margin-bottom: 20px;
+    color: #1e293b;
+}
+
+/* Filter Styling */
+.report-filters.card {
+    border: none;
+    margin-bottom: 25px;
+}
+.filter-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 20px;
+}
+.filter-item {
+    flex: 1;
+    min-width: 150px;
+}
+.filter-item label {
+    font-weight: 600;
+    margin-bottom: 5px;
+    font-size: 13px;
+    color: #475569;
+}
+.filter-item .btn { font-weight: bold; width: 100%; }
+.filter-item .btn-primary { background-color: #2563eb; border-color: #2563eb; }
+.filter-item .btn-success { background-color: #16a34a; border-color: #16a34a; }
+
+/* Report Body & Table Styling */
+.report-body.card {
+    border: none;
+    padding: 10px;
+}
+#report-container .table-responsive {
+    max-height: 70vh; 
+    overflow: auto;
+}
+#report-container .table {
+    font-size: 12px;
+    margin-bottom: 0;
+    border-collapse: separate;
+    border-spacing: 0;
+    table-layout: fixed;
+}
+#report-container th, #report-container td {
+    vertical-align: middle;
+    padding: 8px;
+    border: 1px solid #e2e8f0;
+    word-wrap: break-word;
+}
+
+/* --- LOGIKA STICKY HEADER & COLUMN YANG DISEMPURNAKAN --- */
+#report-container th {
+    background-color: #f1f5f9;
+    color: #334155;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 11px;
+    text-align: center;
+    position: sticky;
+    z-index: 2;
+}
+
+#report-container thead tr:nth-child(1) th { top: 0; }
+#report-container thead tr:nth-child(2) th { top: 38px; }
+
+:root {
+    --col-1-width: 120px; 
+    --col-2-width: 120px;
+    --col-3-width: 200px;
+}
+
+#report-container tbody td:nth-child(-n+3),
+#report-container thead tr:nth-child(1) th:nth-child(-n+3) {
+    position: sticky;
+    z-index: 1;
+    background-color: #f8fafc;
+}
+
+#report-container td:nth-child(1), #report-container th:nth-child(1) { left: 0; width: var(--col-1-width); min-width: var(--col-1-width); }
+#report-container td:nth-child(2), #report-container th:nth-child(2) { left: var(--col-1-width); width: var(--col-2-width); min-width: var(--col-2-width); }
+#report-container td:nth-child(3), #report-container th:nth-child(3) { left: calc(var(--col-1-width) + var(--col-2-width)); width: var(--col-3-width); min-width: var(--col-3-width); }
+
+#report-container thead tr:nth-child(1) th:nth-child(-n+3) { z-index: 3; }
+
+#report-container th:nth-child(n+4), #report-container td:nth-child(n+4) { width: 150px; }
+.text-right { text-align: right; }
+
+/* Grand Total Row Styling */
+#report-container .grand-total td {
+    font-weight: bold;
+    background-color: #e2e8f0;
+    border-top: 2px solid #cbd5e1;
+    color: #1e293b;
+}
+
+/* Highlight Cell Styling */
+.highlight-cell {
+    background-color: #ef4444 !important;
+    color: white;
+    font-weight: bold;
+    text-align: right;
+    padding: 8px;
+    border-radius: 4px;
+    margin: -9px;
+}
+
+.weekend-col { background-color: #f1f5f9 !important; }
+
+/* Style untuk Header Halaman dan Link Kembali */
+.report-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+.page-title { margin-bottom: 0 !important; }
+.back-to-desk-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    color: #475569;
+    font-weight: 600;
+    font-size: 14px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    transition: background-color 0.2s;
+    white-space: nowrap;
+}
+.back-to-desk-link:hover {
+    background-color: #e2e8f0;
+    color: #1e293b;
+}
+</style>
+{% endblock %}
+
+
+{# ================================================================== #}
+{# 3. BLOK SCRIPT (SEMUA JAVASCRIPT MASUK KE SINI) #}
+{# ================================================================== #}
+{% block script %}
+<!-- <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script> -->
+<script>
+$(document).ready(function() {
+    // Atur nilai filter default saat halaman dimuat
+    const today = new Date();
+    $("#year-filter").val(today.getFullYear());
+    $("#month-filter").val(today.getMonth() + 1);
+// --- FUNGSI BARU UNTUK MENGISI DROPDOWN MESIN ---
+// --- FUNGSI DROPDOWN MESIN DIPERBARUI ---
+    function populateMesinFilter() {
+        const mesinSelect = $("#mesin-filter");
+        
+        // Menggunakan frappe.call untuk memanggil fungsi Python
+        frappe.call({
+            method: "andon_management.api.utils.get_machine_list",
+            callback: function(r) {
+                if (r.message && Array.isArray(r.message)) {
+                    // Server mengembalikan list berisi nama-nama mesin
+                    r.message.forEach(machineName => {
+                        const option = $('<option></option>');
+                        option.val(machineName);
+                        option.text(machineName);
+                        mesinSelect.append(option);
+                    });
+                }
+            }
+        });
+    }
+
+    // Panggil fungsi untuk mengisi dropdown saat halaman dimuat
+    populateMesinFilter();
+    // Helper function untuk mengecek hari Sabtu/Minggu (tidak berubah)
+    function isWeekend(year, month, day) {
+        const date = new Date(year, month - 1, day);
+        const dayOfWeek = date.getDay(); // 0=Minggu, 6=Sabtu
+        return dayOfWeek === 0 || dayOfWeek === 6;
+    }
+
+    // Helper function baru untuk men-download file dari data base64
+    function download_base64_file(base64_data, filename) {
+        const link = document.createElement('a');
+        link.href = `data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,${base64_data}`;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    // Event listener untuk tombol "Tampilkan Laporan" (tidak berubah)
+    $("#run-report-btn").on("click", function() {
+        let btn = $(this);
+        let filters = {
+            year: $("#year-filter").val(),
+            month: $("#month-filter").val(),
+            mesin: $("#mesin-filter").val()
+        };
+        btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Memuat...');
+        $("#report-container").html(`<div class="text-center text-muted p-5"><h4><i class="fa fa-spinner fa-spin"></i> Memuat data laporan...</h4></div>`);
+        $("#export-excel-btn").hide();
+
+        frappe.call({
+            method: "andon_management.andon_management.report.production_slot_monthly_summary.production_slot_monthly_summary.execute",
+            args: { filters: filters },
+            callback: function(r) {
+                btn.prop('disabled', false).html('Tampilkan Laporan');
+                if (r.message && r.message.length === 2 && r.message[1].length > 0) {
+                    let columns = r.message[0];
+                    let data = r.message[1];
+                    render_table(columns, data, filters.year, filters.month);
+                    $("#export-excel-btn").show();
+                } else {
+                    $("#report-container").html(`<div class="text-center text-muted p-5"><h4>Tidak ada data untuk filter yang dipilih.</h4></div>`);
+                }
+            },
+            error: function() {
+                btn.prop('disabled', false).html('Tampilkan Laporan');
+                $("#report-container").html(`<div class="text-center text-danger p-5"><h4>Terjadi kesalahan saat menghubungi server.</h4></div>`);
+            }
+        });
+    });
+
+    // Event listener untuk ekspor Excel (DIMODIFIKASI)
+    $("#export-excel-btn").on("click", function() {
+        let btn = $(this);
+        let filters = {
+            year: $("#year-filter").val(),
+            month: $("#month-filter").val(),
+            mesin: $("#mesin-filter").val()
+        };
+
+        btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Membuat file...');
+
+        frappe.call({
+            method: "andon_management.andon_management.report.production_slot_monthly_summary.export.export_production_report",
+            args: {
+                filters: filters
+            },
+            callback: function(r) {
+                btn.prop('disabled', false).html('<i class="fa fa-file-excel-o"></i> Simpan ke Excel');
+                if (r.message) {
+                    // Gunakan fungsi download baru
+                    download_base64_file(r.message.filecontent, r.message.filename);
+                }
+            },
+            error: function() {
+                btn.prop('disabled', false).html('<i class="fa fa-file-excel-o"></i> Simpan ke Excel');
+                frappe.msgprint("Terjadi kesalahan saat membuat file Excel.");
+            }
+        });
+    });
+
+    // --- FUNGSI RENDER TABEL (tidak berubah) ---
+    function render_table(columns, data, year, month) {
+        let table = $('<table class="table table-bordered table-hover table-striped"></table>');
+        let thead = $('<thead></thead>');
+        let header_row_1 = $('<tr></tr>');
+        let header_row_2 = $('<tr></tr>');
+        header_row_1.append('<th rowspan="2">Mesin</th>');
+        header_row_1.append('<th rowspan="2">Deskripsi Slot</th>');
+        header_row_1.append('<th rowspan="2">Part No</th>');
+        
+        let date_columns = {};
+        columns.forEach(col => {
+            if (col.fieldname.startsWith('plan_') || col.fieldname.startsWith('actual_')) {
+                const day = col.label.split(' ')[0];
+                if (!date_columns[day]) { date_columns[day] = {}; }
+            }
+        });
+
+        const sorted_days = Object.keys(date_columns).sort((a, b) => parseInt(a) - parseInt(b));
+        sorted_days.forEach(day => {
+            let th = $(`<th colspan="2">${day}</th>`);
+            if (isWeekend(year, month, day)) {
+                th.addClass('weekend-col');
+            }
+            header_row_1.append(th);
+            
+            header_row_2.append(isWeekend(year, month, day) ? '<th class="weekend-col">Plan</th>' : '<th>Plan</th>');
+            header_row_2.append(isWeekend(year, month, day) ? '<th class="weekend-col">Actual</th>' : '<th>Actual</th>');
+        });
+
+        header_row_1.append('<th rowspan="2">Total Plan</th>');
+        header_row_1.append('<th rowspan="2">Total Actual</th>');
+        thead.append(header_row_1);
+        thead.append(header_row_2);
+        table.append(thead);
+
+        let tbody = $('<tbody></tbody>');
+        data.forEach(row => {
+            let tr = $('<tr></tr>');
+            if (row.slot_no && String(row.slot_no).includes("GRAND TOTAL")) {
+                tr.addClass('grand-total');
+            }
+            columns.forEach(col => {
+                let value;
+                if (col.fieldname.startsWith('plan_') || col.fieldname.startsWith('actual_') || col.fieldname.startsWith('total_')) {
+                    value = row[col.fieldname] || 0;
+                } else {
+                    value = row[col.fieldname] || "";
+                }
+                let cell_html = value;
+                let css_class = "";
+
+                if (typeof value === 'number') {
+                    css_class = "text-right";
+                }
+                if (col.fieldname.startsWith('plan_') || col.fieldname.startsWith('actual_')) {
+                    const day = col.fieldname.split('_')[1];
+                    if(isWeekend(year, month, day)) {
+                        css_class += ' weekend-col';
+                    }
+                }
+
+                if (col.fieldname.startsWith("actual_")) {
+                    const planValue = row[`plan_${col.fieldname.split('_')[1]}`] || 0;
+                    if (planValue > 0 && value < planValue) {
+                        cell_html = `<div class="highlight-cell">${value}</div>`;
+                        css_class = css_class.replace('text-right', '').replace('weekend-col', ''); 
+                    }
+                }
+                tr.append(`<td class="${css_class}">${cell_html}</td>`);
+            });
+            tbody.append(tr);
+        });
+        table.append(tbody);
+        $("#report-container").empty().append('<div class="table-responsive"></div>').find('.table-responsive').append(table);
+    }
+});
+</script>
+{% endblock %}

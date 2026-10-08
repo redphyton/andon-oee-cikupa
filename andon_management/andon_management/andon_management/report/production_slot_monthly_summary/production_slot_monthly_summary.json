@@ -1,0 +1,28 @@
+{
+ "add_total_row": 0,
+ "add_translate_data": 0,
+ "columns": [],
+ "creation": "2025-10-12 23:08:31.184968",
+ "disabled": 0,
+ "docstatus": 0,
+ "doctype": "Report",
+ "filters": [],
+ "idx": 0,
+ "is_standard": "Yes",
+ "letterhead": null,
+ "modified": "2025-10-12 23:35:44.859353",
+ "modified_by": "Administrator",
+ "module": "Andon Management",
+ "name": "Production Slot Monthly Summary",
+ "owner": "Administrator",
+ "prepared_report": 0,
+ "ref_doctype": "Production Slot Summary",
+ "report_name": "Production Slot Monthly Summary",
+ "report_type": "Script Report",
+ "roles": [
+  {
+   "role": "All"
+  }
+ ],
+ "timeout": 0
+}

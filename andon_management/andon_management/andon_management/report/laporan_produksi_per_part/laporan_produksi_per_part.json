@@ -1,0 +1,31 @@
+{
+ "add_total_row": 0,
+ "add_translate_data": 0,
+ "columns": [],
+ "creation": "2025-06-22 23:21:37.189708",
+ "disabled": 0,
+ "docstatus": 0,
+ "doctype": "Report",
+ "filters": [],
+ "idx": 0,
+ "is_standard": "Yes",
+ "letterhead": null,
+ "modified": "2025-06-22 23:21:37.189708",
+ "modified_by": "Administrator",
+ "module": "Andon Management",
+ "name": "Laporan Produksi per Part",
+ "owner": "Administrator",
+ "prepared_report": 0,
+ "ref_doctype": "Produksi",
+ "report_name": "Laporan Produksi per Part",
+ "report_type": "Script Report",
+ "roles": [
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "Andon Manager"
+  }
+ ],
+ "timeout": 0
+}

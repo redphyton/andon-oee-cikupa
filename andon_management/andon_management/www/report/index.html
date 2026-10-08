@@ -1,0 +1,121 @@
+<style>
+    /* Kita bungkus style supaya tidak merusak tampilan Frappe lainnya */
+    .custom-report-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 80vh; /* Sesuaikan tinggi agar pas di layar */
+        padding: 20px;
+    }
+
+    .custom-card {
+        background: white;
+        padding: 2.5rem;
+        border-radius: 15px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+        width: 100%;
+        max-width: 380px;
+        border: 1px solid #e2e6ea;
+    }
+
+    .custom-card h2 {
+        text-align: center;
+        margin-top: 0;
+        margin-bottom: 1.5rem;
+    }
+
+    .custom-card label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+
+    .custom-card select {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 1.2rem;
+        border: 1px solid #ced4da;
+        border-radius: 8px;
+        background-color: #fff;
+    }
+
+    .custom-card button {
+        width: 100%;
+        padding: 12px;
+        background-color: #0d6efd;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .custom-card button:hover {
+        background-color: #0b5ed7;
+    }
+</style>
+
+<div class="custom-report-container">
+    <div class="custom-card">
+        <h2>Laporan OEE</h2>
+        
+        <label>Line Assy</label>
+        <select id="assy">
+            <option value="8-D">Line 8-D</option>
+        </select>
+
+        <label>Bulan</label>
+        <select id="bulan">
+            <option value="01">Januari</option>
+            <option value="02">Februari</option>
+            <option value="03">Maret</option>
+            <option value="04">April</option>
+            <option value="05">Mei</option>
+            <option value="06">Juni</option>
+            <option value="07">Juli</option>
+            <option value="08">Agustus</option>
+            <option value="09">September</option>
+            <option value="10">Oktober</option>
+            <option value="11">November</option>
+            <option value="12">Desember</option>
+        </select>
+
+        <label>Tahun</label>
+        <select id="tahun">
+            <option value="2025">2025</option>
+            <option value="2026" selected>2026</option>
+        </select>
+
+        <button onclick="bukaReport()">Tampilkan Data</button>
+    </div>
+</div>
+
+<script>
+    frappe.ready(function() {
+        // Gunakan frappe.ready untuk memastikan halaman sudah siap
+        
+        const today = new Date();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const yyyy = today.getFullYear();
+
+        // Pastikan elemen ada sebelum set value
+        if(document.getElementById('bulan')) {
+            document.getElementById('bulan').value = mm;
+            document.getElementById('tahun').value = yyyy;
+        }
+    });
+
+    function bukaReport() {
+        const assy = document.getElementById('assy').value;
+        const bulan = document.getElementById('bulan').value;
+        const tahun = document.getElementById('tahun').value;
+
+        // URL Otomatis
+        const currentHost = window.location.origin;
+        const path = "/report_oee"; // Pastikan route ini benar
+        const fullUrl = `${currentHost}${path}?assy=${assy}&bulan=${bulan}&tahun=${tahun}`;
+
+        window.open(fullUrl, '_blank');
+    }
+</script>

@@ -1,0 +1,196 @@
+{% extends "templates/web.html" %}
+
+{# Menghilangkan Header, Navbar, dan Footer Bawaan #}
+{% block header %}{% endblock %}
+{% block navbar %}{% endblock %}
+{% block footer %}{% endblock %}
+{% block sidebar %}{% endblock %}
+
+{# ================================================================== #}
+{# 1. BLOK KONTEN HALAMAN #}
+{# ================================================================== #}
+{% block page_content %}
+<div class="production-report-page">
+    <div class="report-header">
+        <h2 class="font-weight-bold page-title">
+            Laporan Produksi: <span id="machine-name-title">Memuat...</span>
+        </h2>
+        <a href="/app" class="back-to-desk-link">
+            <i class="fa fa-arrow-left"></i> Kembali ke Desk
+        </a>
+    </div>
+
+    <div id="report-container" class="report-body card shadow-sm">
+        <p class="text-muted p-4">Memuat data untuk bulan ini...</p>
+    </div>
+</div>
+{% endblock %}
+
+
+{# ================================================================== #}
+{# 2. BLOK CSS #}
+{# ================================================================== #}
+{% block style %}
+<style>
+/* ... (CSS Anda tidak berubah) ... */
+.container { max-width: 100% !important; }
+.production-report-page { padding: 20px; background-color: #f1f5f9; }
+.report-header h2 { margin-bottom: 20px; color: #1e293b; }
+.report-body.card { border: none; padding: 10px; }
+#report-container .table-responsive { max-height: 85vh; overflow: auto; }
+#report-container .table { font-size: 12px; margin-bottom: 0; border-collapse: separate; border-spacing: 0; table-layout: fixed; }
+#report-container th, #report-container td { vertical-align: middle; padding: 8px; border: 1px solid #e2e8f0; word-wrap: break-word; }
+#report-container th { background-color: #f1f5f9; color: #334155; font-weight: 600; text-transform: uppercase; font-size: 11px; text-align: center; position: sticky; z-index: 2; }
+#report-container thead tr:nth-child(1) th { top: 0; }
+#report-container thead tr:nth-child(2) th { top: 38px; }
+:root { --col-1-width: 120px; --col-2-width: 120px; --col-3-width: 200px; }
+#report-container tbody td:nth-child(-n+3), #report-container thead tr:nth-child(1) th:nth-child(-n+3) { position: sticky; z-index: 1; background-color: #f8fafc; }
+#report-container td:nth-child(1), #report-container th:nth-child(1) { left: 0; width: var(--col-1-width); min-width: var(--col-1-width); }
+#report-container td:nth-child(2), #report-container th:nth-child(2) { left: var(--col-1-width); width: var(--col-2-width); min-width: var(--col-2-width); }
+#report-container td:nth-child(3), #report-container th:nth-child(3) { left: calc(var(--col-1-width) + var(--col-2-width)); width: var(--col-3-width); min-width: var(--col-3-width); }
+#report-container thead tr:nth-child(1) th:nth-child(-n+3) { z-index: 3; }
+#report-container th:nth-child(n+4), #report-container td:nth-child(n+4) { width: 150px; }
+.text-right { text-align: right; }
+#report-container .grand-total td { font-weight: bold; background-color: #e2e8f0; border-top: 2px solid #cbd5e1; color: #1e293b; }
+.highlight-cell { background-color: #ef4444 !important; color: white; font-weight: bold; text-align: right; padding: 8px; border-radius: 4px; margin: -9px; }
+.weekend-col { background-color: #f1f5f9 !important; }
+.report-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.page-title { margin-bottom: 0 !important; }
+.back-to-desk-link { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; color: #475569; font-weight: 600; font-size: 14px; padding: 8px 12px; border-radius: 8px; transition: background-color 0.2s; white-space: nowrap; }
+.back-to-desk-link:hover { background-color: #e2e8f0; color: #1e2b3b; }
+</style>
+{% endblock %}
+
+
+{# ================================================================== #}
+{# 3. BLOK SCRIPT #}
+{# ================================================================== #}
+{% block script %}
+<script>
+$(document).ready(function() {
+    // Flag untuk menandai pemuatan pertama kali
+    let isFirstLoad = true;
+
+    function fetchAndRenderReport() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const machineName = urlParams.get('mesin') || "";
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = today.getMonth() + 1;
+        $("#machine-name-title").text(machineName || "Semua Mesin");
+
+        const scrollableContainer = $("#report-container .table-responsive");
+        let scrollTop = 0;
+        let scrollLeft = 0;
+        if (scrollableContainer.length > 0) {
+            scrollTop = scrollableContainer.scrollTop();
+            scrollLeft = scrollableContainer.scrollLeft();
+        }
+
+        const filters = { year: year, month: month, mesin: machineName };
+
+        frappe.call({
+            method: "andon_management.andon_management.report.production_slot_monthly_summary.production_slot_monthly_summary.execute",
+            args: { filters: filters },
+            callback: function(r) {
+                if (r.message && r.message.length === 2 && r.message[1].length > 0) {
+                    render_table(r.message[0], r.message[1], filters.year, filters.month);
+                    
+                    // Jika bukan pemuatan pertama, kembalikan posisi scroll
+                    if (!isFirstLoad) {
+                        $("#report-container .table-responsive").scrollTop(scrollTop).scrollLeft(scrollLeft);
+                    }
+                    
+                    // --- PERBAIKAN: Lakukan autoscroll HANYA PADA pemuatan pertama ---
+                    if (isFirstLoad) {
+                        scrollToToday();
+                        isFirstLoad = false; // Set flag agar tidak autoscroll lagi
+                    }
+                } else {
+                    $("#report-container").html(`<div class="text-center text-muted p-5"><h4>Tidak ada data produksi untuk mesin ini di bulan berjalan.</h4></div>`);
+                }
+            },
+            error: function() {
+                $("#report-container").html(`<div class="text-center text-danger p-5"><h4>Terjadi kesalahan saat menghubungi server.</h4></div>`);
+            }
+        });
+    }
+
+function scrollToToday() {
+        const today = new Date();
+        const currentDay = today.getDate().toString();
+        const scrollContainer = $("#report-container .table-responsive");
+        
+        const targetHeader = scrollContainer.find("thead tr:first th").filter(function() {
+            return $(this).text().trim() === currentDay;
+        });
+
+        if (targetHeader.length > 0 && scrollContainer.length > 0) {
+            const targetPosition = targetHeader.position().left;
+
+            // --- PERBAIKAN FINAL PERHITUNGAN SCROLL ---
+            // Lebar total 3 kolom sticky adalah 120 + 120 + 200 = 440px.
+            // Kita scroll ke posisi kolom target, lalu dikurangi lebar kolom sticky
+            // agar kolom target muncul TEPAT DI SEBELAH kolom sticky.
+            const stickyColumnsWidth = 440;
+            const scrollTarget = targetPosition - stickyColumnsWidth;
+            
+            // Pastikan tidak scroll ke posisi negatif
+            const finalScrollTarget = Math.max(0, scrollTarget);
+
+            scrollContainer.animate({
+                scrollLeft: finalScrollTarget
+            }, 800);
+        }
+    }
+
+    fetchAndRenderReport();
+    frappe.realtime.on('UPDATE ANDON', function(data) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const currentPageMachine = urlParams.get('mesin') || "";
+        if (data && data.mesin) {
+            if (currentPageMachine === "" || data.mesin === currentPageMachine) {
+                fetchAndRenderReport();
+            }
+        }
+    });
+
+    // --- FUNGSI RENDER TABEL (tidak berubah) ---
+    function isWeekend(year, month, day) { const date = new Date(year, month - 1, day); return date.getDay() === 0 || date.getDay() === 6; }
+    function render_table(columns, data, year, month) {
+        let table = $('<table class="table table-bordered table-hover table-striped"></table>');
+        let thead = $('<thead></thead>');
+        let header_row_1 = $('<tr></tr>');
+        let header_row_2 = $('<tr></tr>');
+        header_row_1.append('<th rowspan="2">Mesin</th>');
+        header_row_1.append('<th rowspan="2">Deskripsi Slot</th>');
+        header_row_1.append('<th rowspan="2">Part No</th>');
+        let date_columns = {};
+        columns.forEach(col => { if (col.fieldname.startsWith('plan_') || col.fieldname.startsWith('actual_')) { const day = col.label.split(' ')[0]; if (!date_columns[day]) { date_columns[day] = {}; } } });
+        const sorted_days = Object.keys(date_columns).sort((a, b) => parseInt(a) - parseInt(b));
+        sorted_days.forEach(day => { let th = $(`<th colspan="2">${day}</th>`); if (isWeekend(year, month, day)) { th.addClass('weekend-col'); } header_row_1.append(th); header_row_2.append(isWeekend(year, month, day) ? '<th class="weekend-col">Plan</th>' : '<th>Plan</th>'); header_row_2.append(isWeekend(year, month, day) ? '<th class="weekend-col">Actual</th>' : '<th>Actual</th>'); });
+        header_row_1.append('<th rowspan="2">Total Plan</th>');
+        header_row_1.append('<th rowspan="2">Total Actual</th>');
+        thead.append(header_row_1);
+        thead.append(header_row_2);
+        table.append(thead);
+        let tbody = $('<tbody></tbody>');
+        data.forEach(row => {
+            let tr = $('<tr></tr>');
+            if (row.slot_no && String(row.slot_no).includes("GRAND TOTAL")) { tr.addClass('grand-total'); }
+            columns.forEach(col => {
+                let value = (col.fieldname.startsWith('plan_') || col.fieldname.startsWith('actual_') || col.fieldname.startsWith('total_')) ? (row[col.fieldname] || 0) : (row[col.fieldname] || "");
+                let cell_html = value;
+                let css_class = (typeof value === 'number') ? "text-right" : "";
+                if (col.fieldname.startsWith('plan_') || col.fieldname.startsWith('actual_')) { const day = col.fieldname.split('_')[1]; if (isWeekend(year, month, day)) { css_class += ' weekend-col'; } }
+                if (col.fieldname.startsWith("actual_")) { const planValue = row[`plan_${col.fieldname.split('_')[1]}`] || 0; if (planValue > 0 && value < planValue) { cell_html = `<div class="highlight-cell">${value}</div>`; css_class = css_class.replace('text-right', '').replace('weekend-col', ''); } }
+                tr.append(`<td class="${css_class}">${cell_html}</td>`);
+            });
+            tbody.append(tr);
+        });
+        table.append(tbody);
+        $("#report-container").empty().append('<div class="table-responsive"></div>').find('.table-responsive').append(table);
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,146 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:{production_start}/{deskripsi}/{mesin}/{part_no}",
+ "creation": "2025-09-18 21:03:47.032349",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "tanggal",
+  "mesin",
+  "slot",
+  "deskripsi",
+  "slot_start",
+  "slot_end",
+  "production_start",
+  "production_end",
+  "shift",
+  "part_no",
+  "plan_qty",
+  "takt_time",
+  "actual_qty"
+ ],
+ "fields": [
+  {
+   "fieldname": "tanggal",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Tanggal",
+   "search_index": 1
+  },
+  {
+   "fieldname": "mesin",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Mesin",
+   "search_index": 1
+  },
+  {
+   "fieldname": "slot",
+   "fieldtype": "Link",
+   "label": "Slot",
+   "options": "Production Time Slot",
+   "search_index": 1
+  },
+  {
+   "fetch_from": "slot.description",
+   "fieldname": "deskripsi",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Deskripsi Slot",
+   "search_index": 1
+  },
+  {
+   "fieldname": "slot_start",
+   "fieldtype": "Datetime",
+   "label": "Slot Start"
+  },
+  {
+   "fieldname": "slot_end",
+   "fieldtype": "Datetime",
+   "label": "Slot End"
+  },
+  {
+   "fieldname": "production_start",
+   "fieldtype": "Datetime",
+   "label": "Production Start"
+  },
+  {
+   "fieldname": "production_end",
+   "fieldtype": "Datetime",
+   "label": "Production End"
+  },
+  {
+   "fetch_from": "slot.shift",
+   "fieldname": "shift",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Shift",
+   "search_index": 1
+  },
+  {
+   "fieldname": "part_no",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Part No",
+   "search_index": 1
+  },
+  {
+   "fieldname": "plan_qty",
+   "fieldtype": "Int",
+   "label": "Plan Qty"
+  },
+  {
+   "fieldname": "takt_time",
+   "fieldtype": "Float",
+   "label": "Takt Time",
+   "precision": "1"
+  },
+  {
+   "fieldname": "actual_qty",
+   "fieldtype": "Int",
+   "label": "Actual Qty"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-09-18 22:13:13.478069",
+ "modified_by": "Administrator",
+ "module": "Andon Management",
+ "name": "Production Slot Summary",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Andon Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

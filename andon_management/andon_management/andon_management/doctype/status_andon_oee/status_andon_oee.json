@@ -1,0 +1,154 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:nama_assy",
+ "creation": "2025-11-29 20:30:39.448158",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "nama_assy",
+  "model",
+  "tujuan",
+  "d_plan",
+  "h_plan",
+  "actual",
+  "balance",
+  "jtt",
+  "mtt",
+  "eff",
+  "status_line",
+  "info_planning",
+  "alarm_id"
+ ],
+ "fields": [
+  {
+   "fieldname": "nama_assy",
+   "fieldtype": "Data",
+   "label": "Nama Assy",
+   "unique": 1
+  },
+  {
+   "fieldname": "model",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Model"
+  },
+  {
+   "fieldname": "tujuan",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Tujuan"
+  },
+  {
+   "fieldname": "d_plan",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "D Plan"
+  },
+  {
+   "fieldname": "h_plan",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "H Plan"
+  },
+  {
+   "fieldname": "actual",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Actual"
+  },
+  {
+   "fieldname": "balance",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Balance"
+  },
+  {
+   "fieldname": "jtt",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "JTT"
+  },
+  {
+   "fieldname": "mtt",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "MTT"
+  },
+  {
+   "fieldname": "eff",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "EFF"
+  },
+  {
+   "fieldname": "status_line",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Status Line"
+  },
+  {
+   "fieldname": "info_planning",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Info Planning"
+  },
+  {
+   "default": "0",
+   "fieldname": "alarm_id",
+   "fieldtype": "Int",
+   "label": "Alarm ID"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-07-01 15:21:51.537442",
+ "modified_by": "Administrator",
+ "module": "Andon Management",
+ "name": "Status Andon OEE",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "All",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Guest",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

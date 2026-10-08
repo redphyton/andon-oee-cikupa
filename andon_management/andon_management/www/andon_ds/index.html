@@ -1,0 +1,315 @@
+{% extends "templates/web.html" %}
+
+{% block title %}{{ doc.name }} - Display{% endblock %}
+
+{% block style %}
+<style>
+    /* === 1. RESET LAYOUT FRAPPE === */
+    header, .navbar, footer, .web-footer, .page-head, .page-header { display: none !important; }
+    .container, .page-content-wrapper, .main-section { max-width: 100% !important; width: 100vw !important; padding: 0 !important; margin: 0 !important; }
+    .page-container { padding-top: 0 !important; background-color: #fff !important; }
+    body, html { overflow: hidden; margin: 0; padding: 0; height: 100%; font-family: 'Arial', sans-serif; }
+
+    .sf-container { display: flex; flex-direction: column; height: 100vh; width: 100vw; }
+
+    .top-section { display: flex; flex: 1; min-height: 0; }
+    
+    .left-col { width: 30%; display: flex; flex-direction: column; }
+    .machine-name { 
+        flex: 1; background-color: #8b8b8b; color: white; display: flex; 
+        align-items: center; justify-content: center; /* CENTER */
+        padding: 10px 16px;                           /* padding merata */
+        font-size: 62px;                              /* naik dari 52px */
+        font-weight: bold; text-transform: uppercase;
+        overflow: hidden; line-height: 1.2;
+        text-align: center;                           /* CENTER teks multi-baris */
+    }
+    .status-box { 
+        height: 18%; display: flex; align-items: center; justify-content: center; 
+        font-size: 44px;                              /* naik dari 36px */
+        font-weight: bold; text-transform: uppercase; flex-shrink: 0;
+    }
+    
+    .right-col { 
+        width: 70%; background-color: #000; display: flex; flex-direction: column; 
+        justify-content: space-around; padding: 12px 32px; box-sizing: border-box; 
+    }
+    .data-row { display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
+    .data-label { font-size: 52px; }                 /* naik dari 44px */
+    .data-value { font-size: 112px; line-height: 1; } /* naik dari 96px */
+    .text-white { color: white; }
+
+    .bottom-section { display: flex; flex-direction: column; border-top: 2px solid #000; flex-shrink: 0; }
+    .info-row { display: flex; border-bottom: 1px solid #000; }
+    .info-label { 
+        width: 30%; border-right: 1px solid #000; font-size: 30px; /* naik dari 26px */
+        font-weight: bold; display: flex; align-items: center; justify-content: center; 
+        padding: 8px 10px; box-sizing: border-box; 
+    }
+    .info-value { 
+        width: 70%; font-size: 34px;                 /* naik dari 30px */
+        font-weight: bold; display: flex; align-items: center; 
+        justify-content: center; padding: 8px 10px; box-sizing: border-box; 
+        overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+    }
+    
+    .footer-row { display: flex; height: 52px; background-color: #32cd32; flex-shrink: 0; }
+    .footer-time { 
+        width: 30%; border-right: 1px solid #000; color: black; font-size: 32px; /* naik dari 18px */
+        font-weight: bold; display: flex; align-items: center; justify-content: center; 
+    }
+    .footer-notes { 
+        width: 70%; font-size: 38px;                 /* naik dari 24px */
+        font-weight: bold; display: flex; align-items: center; justify-content: center;
+        overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+    }
+
+        /* === STALE DATA INDICATOR === */
+    .stale-banner {
+        position: fixed; top: 0; left: 0; right: 0;
+        background: repeating-linear-gradient(
+            45deg, #1a1a1a, #1a1a1a 10px, #2d2d2d 10px, #2d2d2d 20px
+        );
+        color: #ff4444;
+        font-size: 28px; font-weight: bold; text-align: center;
+        padding: 10px; z-index: 999;
+        border-bottom: 3px solid #ff4444;
+        letter-spacing: 2px;
+        display: none; /* default hidden */
+    }
+    .stale-banner.visible { display: block; }
+
+    /* Saat stale: semua angka di right-col jadi abu-abu dan buram */
+    .sf-container.stale .right-col {
+        background-color: #1a1a1a;
+    }
+    .sf-container.stale .data-value {
+        color: #555 !important;
+    }
+    .sf-container.stale .data-label {
+        color: #555 !important;
+    }
+    .sf-container.stale .machine-name {
+        background-color: #444;
+    }
+    .sf-container.stale .status-box {
+        background-color: #333 !important;
+        color: #888 !important;
+    }
+    .sf-container.stale .footer-row {
+        background-color: #333 !important;
+    }
+    .sf-container.stale .footer-notes {
+        background-color: #333 !important;
+        color: #888 !important;
+    }
+    .sf-container.stale .info-value {
+        color: #888;
+    }
+
+    /* Animasi kedip pada banner */
+    @keyframes blink-border {
+        0%, 100% { border-bottom-color: #ff4444; }
+        50% { border-bottom-color: transparent; }
+    }
+    .stale-banner.visible {
+        animation: blink-border 1.5s infinite;
+    }
+</style>
+{% endblock %}
+{% block page_content %}
+    {% set status_text = doc.status | upper %}
+    {% set bg_color = "#8b8b8b" %} 
+    {% set text_color = "white" %}
+
+    {% if status_text == "RUNNING" %}
+        {% set bg_color = "#008000" %}  {% elif status_text == "BREAK" %}
+        {% set bg_color = "#ffd700" %}  {% set text_color = "black" %}  
+    {% elif status_text == "PAUSE" %}
+        {% set bg_color = "#ffa500" %}  {% endif %}
+
+    {% set val_target = doc.target | float %}
+    {% set val_actual = doc.actual | float %}
+    {% set actual_color = "#ff0000" %} {% if val_actual >= val_target %}
+        {% set actual_color = "#008000" %} {% endif %}
+
+<!-- Banner stale, muncul otomatis jika data tidak terupdate > 1 jam -->
+    <div class="stale-banner {% if is_stale %}visible{% endif %}" id="stale-banner">
+        ⚠ DATA TIDAK TERUPDATE — TERAKHIR: <span id="last-updated-label">...</span>
+    </div>
+
+    <div class="sf-container {% if is_stale %}stale{% endif %}" id="sf-container">
+        
+        <div class="top-section">
+            <div class="left-col">
+                <div class="machine-name">{{ doc.name | replace(" ", "<br>") | safe }}</div>
+                <div class="status-box" id="status-val" style="background-color: {{ bg_color }}; color: {{ text_color }};">
+                    {{ status_text or "-" }}
+                </div>
+            </div>
+            <div class="right-col">
+                <div class="data-row text-white">
+                    <div class="data-label">PLAN</div>
+                    <div class="data-value" id="plan-val">{{ doc.plan or 0 }}</div>
+                </div>
+                <div class="data-row text-white">
+                    <div class="data-label">TARGET</div>
+                    <div class="data-value" id="target-val">{{ doc.target or 0 }}</div>
+                </div>
+                <div class="data-row" id="actual-container" style="color: {{ actual_color }};">
+                    <div class="data-label">ACTUAL</div>
+                    <div class="data-value" id="actual-val">{{ doc.actual or 0 }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bottom-section">
+            <div class="info-row">
+                <div class="info-label">PART NAME</div>
+                <div class="info-value" id="part-item-val">{{ doc.part_item or "-" }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">PART NO</div>
+                <div class="info-value" id="part-no-val">{{ doc.part_no or "-" }}</div>
+            </div>
+            <div class="footer-row">
+                <div class="footer-time" id="clock">00/00/0000 00:00:00</div>
+                <div class="footer-notes" id="notes-val" style="background-color: {{ bg_color }}; color: {{ text_color }};">
+                    {{ doc.notes or "" }}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block script %}
+<script>
+    // Menyimpan nama dokumen yang sedang dibuka dari URL atau Jinja
+    const currentDocName = "{{ doc_name or doc.name }}";
+
+    // === STALE DATA CHECKER ===
+    // Waktu terakhir data diupdate (dari server saat render)
+    let lastUpdatedTime = new Date("{{ last_updated_iso }}");
+    const STALE_THRESHOLD_MS = 60 * 60 * 1000; // 1 jam dalam milidetik
+
+    function formatLastUpdated(date) {
+        const d = String(date.getDate()).padStart(2, '0');
+        const mo = String(date.getMonth() + 1).padStart(2, '0');
+        const y = date.getFullYear();
+        const h = String(date.getHours()).padStart(2, '0');
+        const mi = String(date.getMinutes()).padStart(2, '0');
+        return `${d}/${mo}/${y} ${h}:${mi}`;
+    }
+
+    function checkStale() {
+        const now = new Date();
+        const diffMs = now - lastUpdatedTime;
+        const banner = document.getElementById('stale-banner');
+        const container = document.getElementById('sf-container');
+        const label = document.getElementById('last-updated-label');
+
+        label.innerText = formatLastUpdated(lastUpdatedTime);
+
+        if (diffMs > STALE_THRESHOLD_MS) {
+            banner.classList.add('visible');
+            container.classList.add('stale');
+        } else {
+            banner.classList.remove('visible');
+            container.classList.remove('stale');
+        }
+    }
+
+    // Cek setiap 1 menit
+    setInterval(checkStale, 60 * 1000);
+    checkStale(); // jalankan langsung saat load
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const targetName = urlParams.get('name');
+
+    // 1. Script untuk Jam Real-time
+    function updateClock() {
+        const now = new Date();
+        const day = String(now.getDate()).padStart(2, '0');
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const year = now.getFullYear();
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
+        document.getElementById('clock').innerText = `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // 2. FRAPPE REALTIME LISTENER (Bawaan Frappe)
+    frappe.ready(function() {
+        // Ganti event name sesuai yang Anda buat di file shop_floor.py
+        frappe.realtime.on('shop_floor_update', function(data) {
+            
+            // Filter Update: Pastikan event yang ditangkap sesuai dengan mesin saat ini
+            const activeTarget = targetName || currentDocName;
+            
+            if (activeTarget && data.name !== activeTarget) {
+                return; // Abaikan jika data update milik mesin lain
+            }
+
+            console.log("Data Update Real-time:", data);
+            
+            const planVal = parseFloat(data.plan || 0);
+            const targetVal = parseFloat(data.target || 0);
+            const actualVal = parseFloat(data.actual || 0);
+
+            // Update Text / Angka DOM
+            document.getElementById('plan-val').innerText = planVal;
+            document.getElementById('target-val').innerText = targetVal;
+            document.getElementById('actual-val').innerText = actualVal;
+            document.getElementById('part-item-val').innerText = data.part_item || "-";
+            document.getElementById('part-no-val').innerText = data.part_no || "-";
+            document.getElementById('notes-val').innerText = data.notes || "";
+
+            // --- UPDATE WARNA STATUS & NOTES ---
+            const statusBox = document.getElementById('status-val');
+            const notesBox = document.getElementById('notes-val');
+            const currentStatus = (data.status || "-").toUpperCase();
+            
+            statusBox.innerText = currentStatus;
+
+            if (currentStatus === "RUNNING") {
+                statusBox.style.backgroundColor = "#008000"; 
+                statusBox.style.color = "white";
+                notesBox.style.backgroundColor = "#008000"; 
+                notesBox.style.color = "white";
+            } 
+            else if (currentStatus === "BREAK") {
+                statusBox.style.backgroundColor = "#ffd700"; 
+                statusBox.style.color = "black";
+                notesBox.style.backgroundColor = "#ffd700"; 
+                notesBox.style.color = "black";
+            } 
+            else if (currentStatus === "PAUSE") {
+                statusBox.style.backgroundColor = "#ffa500"; 
+                statusBox.style.color = "white";
+                notesBox.style.backgroundColor = "#ffa500"; 
+                notesBox.style.color = "white";
+            } 
+            else {
+                statusBox.style.backgroundColor = "#8b8b8b"; 
+                statusBox.style.color = "white";
+                notesBox.style.backgroundColor = "#8b8b8b"; 
+                notesBox.style.color = "white";
+            }
+
+            // --- UPDATE WARNA ACTUAL VS TARGET ---
+            const actualContainer = document.getElementById('actual-container');
+            if (actualVal >= targetVal) {
+                actualContainer.style.color = "#008000"; // Hijau
+            } else {
+                actualContainer.style.color = "#ff0000"; // Merah
+            }
+
+            // Reset stale timer setiap ada update realtime
+            lastUpdatedTime = new Date();
+            checkStale();
+        });
+    });
+</script>
+{% endblock %}

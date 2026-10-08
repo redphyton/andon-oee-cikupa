@@ -1,0 +1,134 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:{nama_line}/{tanggal}/{shift}/{urutan}",
+ "creation": "2025-09-29 15:46:22.211101",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "nama_line",
+  "tanggal",
+  "shift",
+  "urutan",
+  "part_no",
+  "takt_time",
+  "tujuan",
+  "barcode",
+  "plan",
+  "target",
+  "aktual",
+  "completed"
+ ],
+ "fields": [
+  {
+   "fieldname": "nama_line",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Nama Line",
+   "reqd": 1
+  },
+  {
+   "fieldname": "tanggal",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Tanggal",
+   "reqd": 1
+  },
+  {
+   "fieldname": "urutan",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Urutan",
+   "reqd": 1
+  },
+  {
+   "fieldname": "part_no",
+   "fieldtype": "Link",
+   "label": "Part No",
+   "options": "Master Part"
+  },
+  {
+   "fetch_from": "part_no.takt_time",
+   "fieldname": "takt_time",
+   "fieldtype": "Float",
+   "label": "Takt Time"
+  },
+  {
+   "fieldname": "shift",
+   "fieldtype": "Select",
+   "label": "Shift",
+   "options": "1\n2\n3"
+  },
+  {
+   "fieldname": "plan",
+   "fieldtype": "Int",
+   "label": "Plan"
+  },
+  {
+   "fieldname": "aktual",
+   "fieldtype": "Int",
+   "label": "Aktual"
+  },
+  {
+   "default": "0",
+   "fieldname": "completed",
+   "fieldtype": "Check",
+   "label": "Completed"
+  },
+  {
+   "fieldname": "target",
+   "fieldtype": "Int",
+   "label": "Target"
+  },
+  {
+   "fieldname": "tujuan",
+   "fieldtype": "Data",
+   "label": "Tujuan"
+  },
+  {
+   "fetch_from": "part_no.barcode",
+   "fieldname": "barcode",
+   "fieldtype": "Data",
+   "label": "Barcode"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-10-21 23:09:40.639000",
+ "modified_by": "Administrator",
+ "module": "Andon Management",
+ "name": "Production Schedule",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "All",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

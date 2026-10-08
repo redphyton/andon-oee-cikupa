@@ -1,0 +1,323 @@
+{% extends "templates/web.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block style %}
+<style>
+    /* OVERRIDE BAWAAN FRAPPE */
+    header, footer, nav, .navbar, .web-footer, .page-head, .page-header { display: none !important; }
+    .container, .page-content-wrapper, .main-section { max-width: 100% !important; width: 100vw !important; padding: 0 !important; margin: 0 !important; }
+    .page-container { padding-top: 0 !important; background-color: #ffffff !important; }
+
+    /* STYLE DASAR */
+    :root {
+        --bg-body: #ffffff; 
+        --bg-header: #f8f9fa; 
+        --border-subtle: #dee2e6; 
+        --border-strong: #868e96; 
+        --text-color: #212529; 
+        --color-green: #00c853;
+        --color-red: #d32f2f;
+        --bg-weekend: #f4f4f4; 
+    }
+
+    body { background-color: var(--bg-body); color: var(--text-color); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; height: 100vh; width: 100vw; overflow: hidden; }
+
+    /* TOP BAR */
+    .custom-top-bar { padding: 0 15px; background: #ffffff; border-bottom: 2px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; height: 40px; flex-shrink: 0; width: 100%; }
+    .custom-top-bar h2 { font-size: 1.1rem; margin: 0; color: var(--text-color); line-height: 40px;}
+    .live-dot { height: 10px; width: 10px; background-color: #00c853; border-radius: 50%; display: inline-block; margin-right: 8px; box-shadow: 0 0 5px #00c853; }
+    .live-dot.loading { background-color: #ffeb3b; box-shadow: 0 0 5px #ffeb3b; }
+
+    .btn-excel { background-color: #107c41; color: white; border: none; padding: 4px 10px; font-size: 0.8rem; cursor: pointer; border-radius: 3px; font-weight: bold; }
+
+    /* TABLE CONTAINER */
+    .andon-container { width: 100vw; height: calc(65vh - 40px); overflow: auto; background-color: var(--bg-body); }
+    table { border-collapse: separate; border-spacing: 0; width: 100%; table-layout: fixed; font-size: 7.5px; font-weight: 700; }
+    tr { height: 28px; }
+    th, td { padding: 4px 0; vertical-align: middle; border-right: 1px solid var(--border-subtle); border-bottom: 1px solid var(--border-subtle); text-align: center; white-space: nowrap; }
+
+    /* STICKY SYSTEM - TOP MOST LOGIC */
+    
+    /* 1. King Cell: Header JAM (Paling Atas & Paling Kiri) */
+    thead tr:nth-child(1) th:first-child { 
+        position: sticky !important; 
+        top: 0; 
+        left: 0; 
+        z-index: 500 !important; 
+        background-color: #ffffff !important; 
+        border-right: 2px solid var(--border-strong) !important;
+        box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+    }
+
+    /* 2. Kolom JAM di Body, Shift, dan Total */
+    tbody td:first-child, 
+    .shift-header td:first-child, 
+    .total-row td:first-child { 
+        position: sticky !important; 
+        left: 0; 
+        z-index: 301 !important; 
+        background-color: #ffffff !important; 
+        border-right: 2px solid var(--border-strong) !important;
+        font-weight: bold;
+        box-shadow: 2px 0 5px rgba(0,0,0,0.05);
+    }
+
+    /* 3. Header Tanggal (Sticky Atas) */
+    thead tr:nth-child(1) th { position: sticky; top: 0; z-index: 400; background: var(--bg-header); }
+    thead tr:nth-child(2) th { position: sticky; top: 28px; z-index: 400; background: var(--bg-header); border-bottom: 2px solid var(--border-strong); }
+
+    /* Day Separator & Weekend */
+    .day-sep { border-right: 2px solid var(--border-strong) !important; }
+    .weekend { background-color: var(--bg-weekend) !important; }
+    th.weekend { background-color: #e9ecef !important; }
+
+    /* Colors */
+    .achieved { color: var(--color-green) !important; } 
+    .missed { color: var(--color-red) !important; }
+    .total-row td { background-color: #ffffff; border-top: 2px solid #000; border-bottom: 2px solid #000; }
+
+    /* CHART */
+    .chart-container { width: 100vw; height: 35vh; padding: 10px; background: #fff; border-top: 2px solid var(--border-strong); box-sizing: border-box; }
+</style>
+{% endblock %}
+
+{% block page_content %}
+    <div class="custom-top-bar">
+        <h2>
+            <span class="live-dot" id="status-indicator"></span>
+            ANDON OEE : <span style="color:#000; font-weight:bold;">{{ active_assy }}</span> 
+            <small>({{ period_label }})</small>
+        </h2>
+        <div>
+            <button class="btn-excel" onclick="downloadExcel()">Save Excel</button>
+        </div>
+    </div>
+
+    <div class="andon-container">
+        <table id="andonTable">
+            <colgroup>
+                <col style="width: 100px;"> {% for d in dates %}
+                    <col style="width: 35px;"><col style="width: 35px;">
+                {% endfor %}
+            </colgroup>
+            <thead>
+                <tr>
+                    <th rowspan="2">JAM</th>
+                    {% for d in dates %}
+                        {% set is_wk = frappe.utils.getdate(d.key|replace('_', '-')).weekday() in [5, 6] %}
+                        <th colspan="2" class="day-sep {% if is_wk %}weekend{% endif %}">{{ d.day_num }}</th>
+                    {% endfor %}
+                </tr>
+                <tr>
+                    {% for d in dates %}
+                        {% set is_wk = frappe.utils.getdate(d.key|replace('_', '-')).weekday() in [5, 6] %}
+                        <th class="{% if is_wk %}weekend{% endif %}">P</th>
+                        <th class="day-sep {% if is_wk %}weekend{% endif %}">A</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% set ns = namespace(last_shift=None) %}
+                {% for row in rows %}
+                    {% if ns.last_shift and row.shift != ns.last_shift %}
+                        <tr class="total-row">
+                            <td>TOTAL {{ ns.last_shift }}</td>
+                            {% for d in dates %}
+                                {% set is_wk = frappe.utils.getdate(d.key|replace('_', '-')).weekday() in [5, 6] %}
+                                <td class="{% if is_wk %}weekend{% endif %}" id="total_{{ ns.last_shift|replace(' ', '_') }}_{{ d.key }}_p">
+                                    {{ "{:,.0f}".format(shift_totals[ns.last_shift][d.key].plan|int) }}
+                                </td>
+                                <td class="day-sep {% if is_wk %}weekend{% endif %}" id="total_{{ ns.last_shift|replace(' ', '_') }}_{{ d.key }}_a">
+                                    {{ "{:,.0f}".format(shift_totals[ns.last_shift][d.key].actual|int) }}
+                                </td>
+                            {% endfor %}
+                        </tr>
+                    {% endif %}
+
+                    {% if row.shift != ns.last_shift %}
+                        <tr class="shift-header">
+                            <td>SHIFT {{ row.shift }}</td>
+                            <td colspan="{{ dates|length * 2 }}" class="day-sep"></td>
+                        </tr>
+                        {% set ns.last_shift = row.shift %}
+                    {% endif %}
+
+                    <tr>
+                        <td>{{ row.deskripsi }}</td>
+                        {% for d in dates %}
+                            {% set is_wk = frappe.utils.getdate(d.key|replace('_', '-')).weekday() in [5, 6] %}
+                            <td class="{% if is_wk %}weekend{% endif %}" id="p_{{ row.urutan }}_{{ d.key }}">{{ row['plan_' ~ d.key] }}</td>
+                            <td class="day-sep {% if is_wk %}weekend{% endif %}" id="a_{{ row.urutan }}_{{ d.key }}">{{ row['actual_' ~ d.key] }}</td>
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+
+                {% if ns.last_shift %}
+                    <tr class="total-row">
+                        <td>TOTAL {{ ns.last_shift }}</td>
+                        {% for d in dates %}
+                            {% set is_wk = frappe.utils.getdate(d.key|replace('_', '-')).weekday() in [5, 6] %}
+                            <td class="{% if is_wk %}weekend{% endif %}" id="total_{{ ns.last_shift|replace(' ', '_') }}_{{ d.key }}_p">
+                                {{ "{:,.0f}".format(shift_totals[ns.last_shift][d.key].plan|int) }}
+                            </td>
+                            <td class="day-sep {% if is_wk %}weekend{% endif %}" id="total_{{ ns.last_shift|replace(' ', '_') }}_{{ d.key }}_a">
+                                {{ "{:,.0f}".format(shift_totals[ns.last_shift][d.key].actual|int) }}
+                            </td>
+                        {% endfor %}
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="chart-container"><canvas id="productionChart"></canvas></div>
+{% endblock %}
+
+{% block script %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="/assets/andon_management/js/xlsx.bundle.min.js"></script>
+<script>
+    function formatNumber(num) {
+        if (!num && num !== 0) return "";
+        // Pastikan input adalah number, lalu format ribuan dengan koma
+        return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    }
+
+    let myChart;
+
+    frappe.ready(function() {
+        const dateKeys = {{ dates | map(attribute='key') | list | tojson }};
+        const currentAssy = "{{ active_assy }}";
+        const statusDot = $('#status-indicator');
+
+        // --- 1. MIDNIGHT REFRESH ---
+        setInterval(() => {
+            const now = new Date();
+            const todayStr = now.getFullYear() + "_" + 
+                             String(now.getMonth() + 1).padStart(2, '0') + "_" + 
+                             String(now.getDate()).padStart(2, '0');
+            if (!dateKeys.includes(todayStr)) location.reload(); 
+        }, 900000);
+
+        // --- 2. INITIALIZE CHART ---
+        const ctx = document.getElementById('productionChart').getContext('2d');
+        myChart = new Chart(ctx, {
+            data: {
+                labels: {{ chart_labels | tojson }},
+                datasets: [
+                    {
+                        type: 'line', label: 'Plan (Cumulative)',
+                        data: {{ chart_data.cum_plan | tojson }},
+                        borderColor: '#d32f2f', backgroundColor: '#d32f2f', borderWidth: 2, yAxisID: 'yAccum'
+                    },
+                    {
+                        type: 'line', label: 'Actual Produksi (Cumulative)',
+                        data: {{ chart_data.cum_actual | tojson }},
+                        borderColor: '#00c853', backgroundColor: '#00c853', borderWidth: 2, yAxisID: 'yAccum'
+                    },
+                    {
+                        type: 'bar', label: 'Qty Produksi Harian',
+                        data: {{ chart_data.daily_actual | tojson }},
+                        backgroundColor: 'rgba(66, 133, 244, 0.7)', yAxisID: 'yDaily'
+                    }
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                scales: {
+                    yDaily: { type: 'linear', position: 'left', title: { display: true, text: 'Harian' } },
+                    yAccum: { type: 'linear', position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'Akumulasi' } }
+                }
+            }
+        });
+
+        updateAllColors();
+
+        // --- 3. REALTIME SOCKET ---
+        frappe.realtime.on('refresh_andon_monitor', function(data) {
+            if(data.assy_name && data.assy_name !== currentAssy) return;
+            statusDot.addClass('loading');
+            frappe.call({
+                method: "andon_management.www.oee.index.get_updates", 
+                args: { assy: currentAssy },
+                callback: function(r) {
+                    if(r.message) {
+                        updateContent(r.message.rows, r.message.shift_totals);
+                        statusDot.removeClass('loading');
+                    }
+                }
+            });
+        });
+
+        function updateCellColor(cell, p, a) {
+            cell.removeClass('missed achieved');
+            // Unformat number (hapus koma) sebelum melakukan perbandingan integer
+            p = parseInt(p.toString().replace(/,/g, '')) || 0; 
+            a = parseInt(a.toString().replace(/,/g, '')) || 0;
+            if (p === 0 && a === 0) return;
+            cell.addClass(a >= p ? 'achieved' : 'missed');
+        }
+
+        function updateAllColors() {
+            $('tbody tr').each(function() {
+                const rowUrutan = $(this).find('td[id^="p_"]').attr('id')?.split('_')[1];
+                if(!rowUrutan) return;
+                dateKeys.forEach(k => {
+                    const p = $('#p_' + rowUrutan + '_' + k).text();
+                    const a = $('#a_' + rowUrutan + '_' + k);
+                    updateCellColor(a, p, a.text());
+                });
+            });
+            $('.total-row').each(function() {
+                const shiftId = $(this).find('td[id^="total_"]').attr('id')?.split('_')[1];
+                dateKeys.forEach(k => {
+                    const p = $('#total_' + shiftId + '_' + k + '_p').text();
+                    const a = $('#total_' + shiftId + '_' + k + '_a');
+                    updateCellColor(a, p, a.text());
+                });
+            });
+        }
+
+        function updateContent(rows, shift_totals) {
+            let runningP = 0, runningA = 0;
+            let dailyAct = [], cumP = [], cumA = [];
+
+            dateKeys.forEach(k => {
+                let dayP = 0, dayA = 0;
+                rows.forEach(row => {
+                    const pVal = row['plan_' + k];
+                    const aVal = row['actual_' + k];
+                    $('#p_' + row.urutan + '_' + k).text(pVal);
+                    $('#a_' + row.urutan + '_' + k).text(aVal);
+                    dayP += (parseInt(pVal) || 0);
+                    dayA += (parseInt(aVal) || 0);
+                });
+                runningP += dayP; runningA += dayA;
+                dailyAct.push(dayA); cumP.push(runningP); cumA.push(runningA);
+            });
+
+            // Update Total Shift dengan Format Ribuan di JavaScript
+            for (let s in shift_totals) {
+                const safeS = s.replace(/ /g, '_');
+                dateKeys.forEach(k => {
+                    $('#total_' + safeS + '_' + k + '_p').text(formatNumber(shift_totals[s][k].plan));
+                    $('#total_' + safeS + '_' + k + '_a').text(formatNumber(shift_totals[s][k].actual));
+                });
+            }
+
+            updateAllColors();
+            myChart.data.datasets[0].data = cumP;
+            myChart.data.datasets[1].data = cumA;
+            myChart.data.datasets[2].data = dailyAct;
+            myChart.update('none');
+        }
+
+        window.downloadExcel = function() {
+            const table = document.getElementById("andonTable");
+            const wb = XLSX.utils.table_to_book(table);
+            XLSX.writeFile(wb, `Andon_OEE_${currentAssy}_${new Date().toISOString().slice(0,10)}.xlsx`);
+        };
+    });
+</script>
+{% endblock %}

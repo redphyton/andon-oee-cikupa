@@ -1,0 +1,290 @@
+{% extends "templates/web.html" %}
+
+{% block title %}Andon OEE Display{% endblock %}
+
+{% block style %}
+<style>
+    /* === 1. RESET LAYOUT FRAPPE === */
+    header, .navbar, footer, .web-footer, .page-head, .page-header { display: none !important; }
+    .container, .page-content-wrapper, .main-section { max-width: 100% !important; width: 100vw !important; padding: 0 !important; margin: 0 !important; }
+    .page-container { padding-top: 0 !important; background-color: #000000 !important; }
+    body { overflow: hidden; }
+
+    /* === 2. GRID UTAMA === */
+    .main-window {
+        display: grid;
+        grid-template-rows: 1fr 40px; 
+        height: 100vh;
+        width: 100vw;
+    }
+
+    .content-grid {
+        display: grid;
+        grid-template-columns: 25% 75%; 
+        height: 100%;
+    }
+
+    /* === 3. PANEL KIRI === */
+    .left-panel {
+        display: flex;
+        flex-direction: column; 
+        align-items: center;    
+        justify-content: space-between; 
+        padding-top: 5vh;    
+        padding-bottom: 5vh; 
+        box-sizing: border-box;
+        transition: background-color 0.5s ease;
+    }
+
+    .line-name {
+        color: #FFFFFF;
+        font-size: 6.5vw; 
+        line-height: 1;
+        text-align: center;
+        text-transform: uppercase;
+        font-weight: 900;
+        white-space: nowrap;
+    }
+
+    .alarm-value {
+        color: #FFFFFF; 
+        font-size: 13vw; 
+        line-height: 1;
+        font-weight: 900;
+        text-shadow: 4px 4px 8px rgba(0,0,0,0.5);
+        margin-top: auto;
+        margin-bottom: auto;
+    }
+
+    /* === 4. PANEL KANAN === */
+    .right-panel {
+        background-color: #000000;
+        display: flex;
+        align-items: flex-start; 
+        padding-top: 2.5vh; 
+        padding-left: 4vw;
+        box-sizing: border-box;
+    }
+
+    .data-table {
+        display: grid;
+        grid-template-columns: auto auto 1fr; 
+        width: 100%;
+        row-gap: 5.5vh; 
+    }
+
+    .dt-label, .dt-colon, .dt-value {
+        color: #FFFFFF;
+        font-size: 5.2vw;
+        font-weight: 800;
+        line-height: 1;
+        white-space: nowrap;
+    }
+    .dt-label { text-align: left; }
+    .dt-colon { text-align: center; margin: 0 1.5vw; } 
+    .dt-value { text-align: left; }
+
+    /* === 5. WARNA === */
+    .color-red { color: #F44336; }   
+    .color-green { color: #00C853; } 
+    .color-white { color: #FFFFFF; }
+    .color-yellow { color: #FFD700; }
+
+    /* === 6. FOOTER === */
+    .footer {
+        background-color: #212121;
+        display: flex;
+        align-items: center;
+        padding: 0 30px;
+        font-size: 22px; 
+        color: lightgray;
+        border-top: 0px solid #444; 
+    }
+    .footer-date { margin-right: 50px; min-width: 250px; }
+    .footer-items { display: flex; align-items: center; width: 100%; }
+    .f-item { margin-right: 45px; display: flex; align-items: center; }
+    .f-label { margin-right: 10px; }
+    .f-val { color: white; font-weight: bold; }
+    .f-status-lbl { color: #FFD700; margin-right: 10px; }
+    .f-status-val { color: #FFD700; font-weight: 900; }
+
+</style>
+{% endblock %}
+
+{% block page_content %}
+    <div class="main-window">
+        <div class="content-grid">
+            {% set is_alarm = doc.alarm_id|int > 0 %}
+            <div class="left-panel" id="panel-kiri-box" style="background-color: {{ '#F44336' if is_alarm else '#A9A9A9' }};">
+                
+                <div class="line-name" id="val-nama-assy">{{ doc.nama_assy }}</div>
+                
+                <div class="alarm-value" id="val-alarm-id" style="display: {{ 'block' if is_alarm else 'none' }};">
+                    {{ "%02d" | format(doc.alarm_id|int) }}
+                </div>
+
+            </div>
+
+            <div class="right-panel">
+                <div class="data-table">
+                    <div class="dt-label">MODEL</div> <div class="dt-colon">:</div>
+                    <div class="dt-value" id="val-model">{{ doc.model }}</div>
+
+                    <div class="dt-label">TUJUAN</div> <div class="dt-colon">:</div>
+                    <div class="dt-value" id="val-tujuan">{{ doc.tujuan }}</div>
+
+                    <div class="dt-label">D PLAN</div> <div class="dt-colon">:</div>
+                    <div class="dt-value" id="val-d-plan">{{ "{:,.0f}".format(doc.d_plan|int).replace(',', '.') }}</div>
+
+                    <div class="dt-label">H PLAN</div> <div class="dt-colon">:</div>
+                    <div class="dt-value" id="val-h-plan">{{ "{:,.0f}".format(doc.h_plan|int).replace(',', '.') }}</div>
+
+                    <div class="dt-label">ACTUAL</div> <div class="dt-colon">:</div>
+                    <div class="dt-value" id="val-actual">{{ "{:,.0f}".format(doc.actual|int).replace(',', '.') }}</div>
+
+                    {% if doc.balance > 0 %}
+                        {% set bal_class = "color-green" %}
+                    {% elif doc.balance < 0 %}
+                        {% set bal_class = "color-red" %}
+                    {% else %}
+                        {% set bal_class = "color-white" %}
+                    {% endif %}
+
+                    <div class="dt-label {{ bal_class }}" id="val-bal-label">BAL.</div> 
+                    <div class="dt-colon {{ bal_class }}" id="val-bal-colon">:</div>
+                    <div class="dt-value {{ bal_class }}" id="val-bal-value">{{ "{:,.0f}".format(doc.balance|int).replace(',', '.') }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <div class="footer-date" id="live-clock">--</div>
+            <div class="footer-items">
+                <!--<div class="f-item"><span class="f-label">Andon OEE:</span><span class="f-val">1.2</span></div>-->
+                <div class="f-item"><span class="f-label">JTT:</span><span class="f-val" id="val-jtt">{{ doc.jtt_fmt }}</span></div>
+                <div class="f-item"><span class="f-label">Eff:</span><span class="f-val" id="val-eff">{{ doc.eff_fmt }}%</span></div>
+                <div class="f-item"><span class="f-label">MTT:</span><span class="f-val" id="val-mtt">{{ doc.mtt_fmt }}</span></div>
+                <div class="f-item"><span class="f-status-lbl">Status:</span><span class="f-status-val" id="val-status">{{ doc.status_line }}</span></div>
+                
+                <div class="f-item" id="panel-planning" style="display: {{ 'flex' if doc.info_planning and doc.info_planning != '-' else 'none' }}">
+                    <span class="f-label">Planning:</span><span class="f-val" id="val-planning">{{ doc.info_planning }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block script %}
+<script>
+    const currentAssy = "{{ doc.nama_assy }}";
+    const urlParams = new URLSearchParams(window.location.search);
+    const targetAssy = "8-D";
+
+    // === Helper Function: Format Ribuan dengan Titik ===
+    function formatNumber(num) {
+        if (num === undefined || num === null || num === '') return '0';
+        return parseInt(num).toLocaleString('id-ID');
+    }
+
+    // 1. JAM DIGITAL
+    function updateClock() {
+        const now = new Date();
+        const yyyy = now.getFullYear();
+        const MM = String(now.getMonth() + 1).padStart(2, '0');
+        const dd = String(now.getDate()).padStart(2, '0');
+        const HH = String(now.getHours()).padStart(2, '0');
+        const mm = String(now.getMinutes()).padStart(2, '0');
+        const ss = String(now.getSeconds()).padStart(2, '0');
+        
+        const clockEl = document.getElementById('live-clock');
+        if(clockEl) clockEl.innerText = `${yyyy}-${MM}-${dd}    ${HH}:${mm}:${ss}`;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // 2. HTTP POLLING / INTERVAL FUNCTION
+    function fetchAndonData() {
+        frappe.call({
+            // PENTING: Ganti path ini dengan path method Python backend Anda
+            method: "andon_management.www.pool_oee.index.get_andon_data",
+            args: {
+                // Opsional: Kirim parameter ke backend jika diperlukan untuk query
+                assy_name: targetAssy || currentAssy 
+            },
+            callback: function(r) {
+                if(r.message) {
+                    var data = r.message; // Data yang direturn dari backend Python
+
+                    // Filter Update
+                    // if (targetAssy && data.nama_assy !== targetAssy) {
+                    //     return; 
+                    // }
+
+                    console.log("Data Update:", data);
+
+                    // Update Text Biasa
+                    if(data.nama_assy) document.getElementById('val-nama-assy').innerText = data.nama_assy;
+                    if(data.model) document.getElementById('val-model').innerText = data.model;
+                    if(data.tujuan) document.getElementById('val-tujuan').innerText = data.tujuan;
+
+                    // === UPDATE ANGKA DENGAN FORMAT RIBUAN (TITIK) ===
+                    if(data.d_plan !== undefined) document.getElementById('val-d-plan').innerText = formatNumber(data.d_plan);
+                    if(data.h_plan !== undefined) document.getElementById('val-h-plan').innerText = formatNumber(data.h_plan);
+                    if(data.actual !== undefined) document.getElementById('val-actual').innerText = formatNumber(data.actual);
+                    if(data.balance !== undefined) document.getElementById('val-bal-value').innerText = formatNumber(data.balance);
+
+                    // Logika Alarm
+                    var alarmVal = parseInt(data.alarm_id || 0);
+                    var alarmEl = document.getElementById('val-alarm-id');
+                    var panelKiri = document.getElementById('panel-kiri-box');
+
+                    if (alarmVal > 0) {
+                        alarmEl.innerText = alarmVal.toString().padStart(2, '0');
+                        alarmEl.style.display = 'block';
+                        panelKiri.style.backgroundColor = '#F44336'; 
+                    } else {
+                        alarmEl.style.display = 'none';
+                        panelKiri.style.backgroundColor = '#A9A9A9'; 
+                    }
+
+                    // Update Footer
+                    if(data.jtt_fmt) document.getElementById('val-jtt').innerText = data.jtt_fmt;
+                    if(data.eff_fmt) document.getElementById('val-eff').innerText = data.eff_fmt + "%";
+                    if(data.mtt_fmt) document.getElementById('val-mtt').innerText = data.mtt_fmt;
+                    if(data.status_line) document.getElementById('val-status').innerText = data.status_line;
+
+                    // Logic Planning
+                    var panelPlan = document.getElementById('panel-planning');
+                    if(data.info_planning && data.info_planning !== '-') {
+                        panelPlan.style.display = 'flex';
+                        document.getElementById('val-planning').innerText = data.info_planning;
+                    } else {
+                        panelPlan.style.display = 'none';
+                    }
+
+                    // Logic Warna Balance
+                    var bal = parseInt(data.balance);
+                    var colorClass = "color-white";
+                    if (bal > 0) colorClass = "color-green";
+                    else if (bal < 0) colorClass = "color-red";
+
+                    var ids = ['val-bal-label', 'val-bal-colon', 'val-bal-value'];
+                    ids.forEach(function(id) {
+                        var el = document.getElementById(id);
+                        el.classList.remove("color-red", "color-green", "color-white");
+                        el.classList.add(colorClass);
+                    });
+                }
+            }
+        });
+    }
+
+    // 3. JALANKAN INTERVAL SAAT HALAMAN SIAP
+    frappe.ready(function() {
+        fetchAndonData(); // Panggil data pertama kali saat web diload
+        
+        // Panggil fetchAndonData setiap 5 detik (5000 milidetik)
+        setInterval(fetchAndonData, 5000); 
+    });
+</script>
+{% endblock %}
