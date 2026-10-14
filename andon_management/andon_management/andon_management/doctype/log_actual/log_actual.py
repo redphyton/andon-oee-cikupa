@@ -13,11 +13,11 @@ from frappe.utils import (
 )
 from frappe.model.document import Document
 from datetime import datetime, time
-import paho.mqtt.client as mqtt
+#import paho.mqtt.client as mqtt
 import json
 
-MQTT_BROKER = "localhost"
-MQTT_PORT = 1883
+#MQTT_BROKER = "localhost"
+#MQTT_PORT = 1883
 
 class LogActual(Document):
     def validate(self):
